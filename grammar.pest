@@ -5,8 +5,6 @@
 //
 
 WHITESPACE = _{ " " | "\t" }
-alpha = { 'a'..'z' | 'A'..'Z' }
-digit = { '0'..'9' }
 
 num = @{ integer_literal ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ integer_literal)? }
 integer_literal = { ("+" | "-")? ~ ASCII_DIGIT+ }
@@ -14,7 +12,7 @@ float_literal = { "-> <WIP> <-" } // todo
 string_literal = { "-> <WIP> <-" } // todo
 boolean = { "true" | "false" }
 
-identifier = ${ !digit ~ (alpha | digit)+ }
+identifier = ${ !ASCII_DIGIT ~ (ASCII_ALPHA | ASCII_DIGIT)+ }
 
 
 operation = _{ add | subtract | multiply | divide | power }
