@@ -12,10 +12,10 @@ aha_diri = ["uyab", "kwarta"]
 
 resulta = msg + random.pilian(aha_diri)
 
-kung resulta kay "Wla kay uyab":
-    isulat("Gaba ray Ako")
-lain kung resulta == "Wla kay kwarta":
+kung ang resulta kay "Wla kay uyab":
+    isulat("Gaba ray Ako") 
+kung lain ang resulta == "Wla kay kwarta":
     isulat("kaparehas rata")
-lain:
+kung lain:
     isulat("Na, murag guba man guro ang Program") 
 ```
