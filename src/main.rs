@@ -127,11 +127,13 @@ impl BisayaParser {
 
 fn main() {
     let file_data = fs::read_to_string("test.bis").unwrap();
-    println!("{:?}", file_data);
+    // println!("{:?}", file_data);
     let result = BisayaParser::parse_file(&*(file_data + "\r\n"));
     match result {
-        Ok(bv) => {
-            println!("{:?}", bv)
+        Ok(bvs) => {
+            for bv in bvs {
+                println!("{:?}", bv);
+            }
         }
         Err(err) => {
             println!("{}", err)
