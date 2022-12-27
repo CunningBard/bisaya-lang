@@ -25,4 +25,7 @@ numero = 1
 pangalan = "Name"
 isulat(numero + pangalang)
 ```
-> Pisting Yawa, ayaw ug pag binugo, ikay daw add ug number sa letters
+> linya 3, ika 15 na karakter:
+> 
+> Pisting Yawa, ayaw ug pag binugo, 
+> ikay daw add ug number sa letters.
