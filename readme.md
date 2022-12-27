@@ -28,4 +28,4 @@ ipakita(numero + pangalang)
 > linya 3, ika 15 na karakter:
 > 
 > Pisting Yawa, ayaw ug pag binugo, 
-> ikay daw add ug number sa letters.
+> ikaw daw add ug number sa letters.
