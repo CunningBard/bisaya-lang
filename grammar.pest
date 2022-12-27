@@ -5,7 +5,7 @@
 //
 
 WHITESPACE = _{ " " | "\t" }
-NEW_LINE_SEPERATOR = _{ "\n" | ";" }
+NEW_LINE_SEPERATOR = _{ "\n" | ";" | "\r\n" } // fck you windows
 
 num = @{ integer_literal ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ integer_literal)? }
 integer_literal = { ("+" | "-")? ~ ASCII_DIGIT+ }
@@ -38,4 +38,4 @@ condition = { "-> <WIP> <-" } // todo
 class = { "-> <WIP> <-" } // todo
 
 
-whole_program = { SOI ~ (variable)* ~ EOI }
+program = _{ SOI ~ NEW_LINE_SEPERATOR* ~ (variable ~ NEW_LINE_SEPERATOR*)* ~ variable* ~ EOI }
