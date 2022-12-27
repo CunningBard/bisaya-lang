@@ -10,8 +10,8 @@ digit = { '0'..'9' }
 
 num = @{ integer_literal ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ integer_literal)? }
 integer_literal = { ("+" | "-")? ~ ASCII_DIGIT+ }
-float_literal = { "-> <WIP> <-" }
-string_literal = { "-> <WIP> <-" }
+float_literal = { "-> <WIP> <-" } // todo
+string_literal = { "-> <WIP> <-" } // todo
 boolean = { "true" | "false" }
 
 identifier = ${ !digit ~ (alpha | digit)+ }
@@ -31,5 +31,9 @@ term = _{ num | string_literal | boolean | identifier | "(" ~ expr ~ ")" }
 declare = { "deklara " }
 assignment = { "=" }
 
-//
+// objects?
+
 variable = { declare ~ identifier ~ assignment ~ expr }
+functions = { "-> <WIP> <-" } // todo
+condition = { "-> <WIP> <-" } // todo
+class = { "-> <WIP> <-" } // todo
