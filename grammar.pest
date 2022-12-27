@@ -5,6 +5,7 @@
 //
 
 WHITESPACE = _{ " " | "\t" }
+NEW_LINE_SEPERATOR = _{ "\n" | ";" }
 
 num = @{ integer_literal ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ integer_literal)? }
 integer_literal = { ("+" | "-")? ~ ASCII_DIGIT+ }
@@ -26,12 +27,15 @@ expr = { term ~ (operation ~ term)* }
 term = _{ num | string_literal | boolean | identifier | "(" ~ expr ~ ")" }
 
 // key words
-declare = { "deklara" }
-assignment = { "=" }
+declare = _{ "deklara" }
+assignment = _{ "=" }
 
 // objects?
 
-variable = { declare ~ identifier ~ assignment ~ expr }
+variable = { declare ~ identifier ~ assignment ~ expr ~ NEW_LINE_SEPERATOR }
 functions = { "-> <WIP> <-" } // todo
 condition = { "-> <WIP> <-" } // todo
 class = { "-> <WIP> <-" } // todo
+
+
+whole_program = { SOI ~ (variable)* ~ EOI }
