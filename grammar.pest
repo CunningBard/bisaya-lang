@@ -28,7 +28,7 @@ expr = { term ~ (operation ~ term)* }
 term = _{ num | string_literal | boolean | identifier | "(" ~ expr ~ ")" }
 
 // key words
-declare = { "deklara " }
+declare = { "deklara" }
 assignment = { "=" }
 
 // objects?
