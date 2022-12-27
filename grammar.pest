@@ -1,0 +1,9 @@
+//
+// Created by intellij-pest on 2022-12-27
+// grammar
+// Author: CunningBard
+//
+
+
+true = { "tinuod" }
+false = { "ditinuod" }

@@ -19,3 +19,10 @@ kung lain ang resulta == "Wla kay kwarta":
 kung lain:
     isulat("Na, murag guba man guro ang Program") 
 ```
+## Errors
+```
+numero = 1
+pangalan = "Name"
+isulat(numero + pangalang)
+```
+> Pisting Yawa, ayaw ug pag binugo, ikay daw add ug number sa letters
