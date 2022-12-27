@@ -4,6 +4,7 @@
 // Author: CunningBard
 //
 
+WHITESPACE = _{ " " | "\t" }
 alpha = { 'a'..'z' | 'A'..'Z' }
 digit = { '0'..'9' }
 
@@ -24,10 +25,11 @@ operation = _{ add | subtract | multiply | divide | power }
     power    = { "^" }
 
 expr = { term ~ (operation ~ term)* }
-term = _{ num | integer_literal | string_literal | boolean | identifier | "(" ~ expr ~ ")" }
+term = _{ num | string_literal | boolean | identifier | "(" ~ expr ~ ")" }
 
+// key words
+declare = { "deklara " }
+assignment = { "=" }
 
-some = { (" ")* }
-variable = { "declare" ~ identifier ~ "=" ~ expr}
-
-WHITESPACE = _{ " " | "\t" }
+//
+variable = { declare ~ identifier ~ assignment ~ expr }
