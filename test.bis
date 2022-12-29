@@ -1,3 +1,16 @@
-deklara sd = 12
-deklara dsd = 13
-deklara dsd = 13
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+deklara sd = 2 * 12 + 1 * (23 * 32);
