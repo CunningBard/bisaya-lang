@@ -1,10 +1,12 @@
 mod parser;
+mod cmd;
+mod virtual_machine;
 
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-use crate::parser::{BisayaParser, BisayaValue};
+use crate::parser::{BisayaParser, BisayaNode};
 
 
 fn main() {
@@ -12,7 +14,7 @@ fn main() {
     match result {
         Ok(bvs) => {
             match bvs {
-                BisayaValue::Program {
+                BisayaNode::Program {
                     statements
                 } => {
                     for statement in statements {
