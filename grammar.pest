@@ -16,15 +16,23 @@ boolean = { "true" | "false" }
 identifier = ${ !ASCII_DIGIT ~ (ASCII_ALPHA | ASCII_DIGIT)+ }
 
 
-operation = _{ add | subtract | multiply | divide | power }
-    add      = { "+" }
-    subtract = { "-" }
-    multiply = { "*" }
-    divide   = { "/" }
-    power    = { "^" }
+operation = _{ add | sub | mul | div }
+    add = { "+"  }
+    sub = { "-"  }
+    mul = { "*"  }
+    div = { "/"  }
+    eq  = { "==" }
+    neq = { "!=" }
+    gt  = { ">"  }
+    gte = { "=>" }
+    lt  = { "<"  }
+    lte = { ">=" }
 
 expr = { term ~ (operation ~ term)* }
-term = _{ num | string_literal | boolean | identifier | "(" ~ expr ~ ")" }
+term = _{ factor  | "(" ~ expr ~ ")" }
+factor = {
+    num | string_literal | boolean | identifier
+}
 
 // key words
 declare = _{ "deklara" }
