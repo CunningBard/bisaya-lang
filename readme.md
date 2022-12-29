@@ -1,7 +1,8 @@
 # Bisaya lang
 isa ka Programming language nga ang gigamit kay bisaya
 
-### Mga Example
+## Mga Example
+### example code
 ```
 ipasulod {
     random
@@ -18,6 +19,12 @@ kon lain resulta == "Wla kay kwarta":
     ipakita("kaparehas rata")
 lain:
     ipakita("Na, murag guba man guro ang Program") 
+```
+### functions
+```
+pamaaging puydi_ba (pangalan) {
+    isulat("dli mag kamo, {}".format(pangalan))
+}
 ```
 ## Errors
 ```
