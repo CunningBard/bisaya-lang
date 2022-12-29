@@ -36,3 +36,7 @@ ipakita(numero + pangalang)
 > 
 > Pisting Yawa, ayaw ug pag binugo, 
 > ikaw daw add ug number sa letters.
+
+
+## Credits
+[The Expression Parser is Based on this](https://github.com/davidcallanan/py-myopl-code)
