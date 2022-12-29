@@ -79,65 +79,8 @@ impl BisayaParser {
         for i in pair.into_inner(){
             println!("{}", i)
         }
-        unimplemented!();
-        match pair.as_rule() {
-            Rule::expr => {
-                let mut parts: VecDeque<Pair<Rule>> = pair.into_inner().collect();
-                let left = Self::parse_term(parts.pop_front().unwrap());
-                if parts.len() == 0 {
-                    Expression::Solo(left)
-                } else {
-                    let op = parts.pop_front().unwrap().as_rule();
-                    let right = Self::parse_term(parts.pop_front().unwrap());
-                    match op {
-                        // Rule::add => {
-                        //     intermediate.push(IFOP::Add);
-                        //     unimplemented!()
-                        // }
-                        // Rule::sub => {
-                        //     Expression::Sub(left, right)
-                        // }
-                        // Rule::mul => {
-                        //     Expression::Mul(left, right)
-                        // }
-                        // Rule::div => {
-                        //     Expression::Div(left, right)
-                        // }
-                        _ => { unreachable!() }
-                    }
-                }
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-    fn parse_term(pair: Pair<Rule>) -> Term {
-        match pair.as_rule() {
-            Rule::factor => {
-                Self::parse_factor(pair.into_inner().next().unwrap())
-            }
-            _ => {
-                unreachable!()
-            }
-        }
-    }
 
-    fn parse_factor(pair: Pair<Rule>) -> Term {
-        match pair.as_rule() {
-            // Rule::num => {
-            //     let num_str = pair.as_span().as_str().to_string();
-            //     if num_str.contains("."){
-            //         Term::Float(num_str.parse::<f32>().unwrap())
-            //     } else {
-            //         Term::Int(num_str.parse::<i32>().unwrap())
-            //     }
-            // }
-            _ => {
-                println!("{}", pair);
-                unreachable!()
-            }
-        }
+        unimplemented!()
     }
     fn parse_value(pair: Pair<Rule>) -> Option<BisayaValue> {
         match pair.as_rule() {
