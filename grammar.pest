@@ -34,7 +34,7 @@ factor = {
     num | string_literal | boolean | identifier
 }
 
-// key words
+// key words?
 declare = _{ "deklara" }
 assignment = _{ "=" }
 
