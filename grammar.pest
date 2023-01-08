@@ -7,11 +7,18 @@
 WHITESPACE = _{ " " | "\t" }
 NEW_LINE_SEPERATOR = _{ "\n" | ";" | "\r\n" } // fck you windows
 
+predefined = { "n" | "r" | "t" | "\\" | "0" | "\"" | "'" }
+byte       = { "x" ~ HEX_DIGIT{2} }
+unicode    = { "u" ~ "{" ~ HEX_DIGIT ~ "}" }
+escape     = { "\\" ~ (predefined | byte | unicode) }
+
+raw_string = { (!("\\" | "\"") ~ ANY)+ }
+
 num = @{ integer_literal ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ integer_literal)? }
 integer_literal = { ("+" | "-")? ~ ASCII_DIGIT+ }
 float_literal = { "-> <WIP> <-" } // todo
-string_literal = { "-> <WIP> <-" } // todo
 boolean = { "true" | "false" }
+string_literal = { "\"" ~ (raw_string | escape)* ~ "\"" }
 
 identifier = ${ !ASCII_DIGIT ~ (ASCII_ALPHA | ASCII_DIGIT)+ }
 
@@ -31,7 +38,7 @@ operation = _{ add | sub | mul | div }
 expr = { term ~ (operation ~ term)* }
 term = _{ factor  | "(" ~ expr ~ ")" }
 factor = {
-    num | string_literal | boolean | identifier
+    num | string_literal | boolean | identifier | string_literal | function_call
 }
 
 // key words?
@@ -40,10 +47,14 @@ assignment = _{ "=" }
 
 // objects?
 
-variable = { declare ~ identifier ~ assignment ~ expr ~ NEW_LINE_SEPERATOR }
-functions = { "-> <WIP> <-" } // todo
+variable_declaration = { declare ~ identifier ~ assignment ~ expr ~ NEW_LINE_SEPERATOR }
+variable_reassignment = { identifier ~ assignment ~ expr ~ NEW_LINE_SEPERATOR } // todo: test this
+function_call = { identifier ~ "(" ~ (expr ~ "," )* ~ expr* ~ ")" ~ NEW_LINE_SEPERATOR}
+function_declaration = { "-> <WIP> <-" } // todo
 condition = { "-> <WIP> <-" } // todo
 class = { "-> <WIP> <-" } // todo
 
+statements = _{ variable_declaration | variable_reassignment| function_call }
 
-program = _{ SOI ~ NEW_LINE_SEPERATOR* ~ (variable ~ NEW_LINE_SEPERATOR*)* ~ variable* ~ EOI }
+
+program = _{ SOI ~ NEW_LINE_SEPERATOR* ~ (statements ~ NEW_LINE_SEPERATOR*)* ~ statements* ~ EOI }
