@@ -1,16 +1,2 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-deklara sd = 2 * 12 + 1 * 23 * 32 + (2 / 1);
+sdeklara proposal = "last name" + " nako pwede ma imo";
+ipakita(proposal);
