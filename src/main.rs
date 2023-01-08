@@ -7,23 +7,14 @@ extern crate pest;
 extern crate pest_derive;
 
 use crate::parser::{BisayaParser, BisayaNode};
+use crate::virtual_machine::VirtualMachine;
 
 
 fn main() {
     let result = BisayaParser::parse_file("test.bis");
     match result {
         Ok(bvs) => {
-            match bvs {
-                BisayaNode::Program {
-                    statements
-                } => {
-                    for statement in statements {
-                        println!("{:#?}", statement);
-
-                    }
-                }
-                _ => { unreachable!() }
-            }
+            VirtualMachine::execute_tree(bvs);
         }
         Err(err) => {
             println!("{}", err)
