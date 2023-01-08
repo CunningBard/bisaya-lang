@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::fs;
+use std::ops::Add;
 use pest::error::Error;
 use pest::iterators::Pair;
 use pest::Parser;
@@ -14,8 +15,68 @@ pub enum BisayaValue {
     Identifier(String),
 }
 
+impl BisayaValue {
+    fn same_type_with(&self, other: &Self) -> bool {
+        let type_id;
+        match self {
+            BisayaValue::Int(_) => { type_id = 1; }
+            BisayaValue::Float(_) => { type_id = 2; }
+            BisayaValue::String(_) => { type_id = 3; }
+            BisayaValue::Boolean(_) => { type_id = 4; }
+            BisayaValue::Identifier(_) => { type_id = 5; }
+        }
+
+        match other {
+            BisayaValue::Int(_) => { type_id == 1 }
+            BisayaValue::Float(_) => { type_id == 2 }
+            BisayaValue::String(_) => { type_id == 3 }
+            BisayaValue::Boolean(_) => { type_id == 4 }
+            BisayaValue::Identifier(_) => { type_id == 5 }
+        }
+    }
+}
+
+impl Add for BisayaValue {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        match self {
+            BisayaValue::Int(left_value) => {
+                match rhs {
+                    BisayaValue::Int(right_value) => {
+                        BisayaValue::Int(left_value + right_value)
+                    }
+                    _ => { unreachable!("Cannot Add different types") }
+                }
+            }
+            BisayaValue::Float(left_value) => {
+                match rhs {
+                    BisayaValue::Float(right_value) => {
+                        BisayaValue::Float(left_value + right_value)
+                    }
+                    _ => { unreachable!("Cannot Add different types") }
+                }
+            }
+            BisayaValue::String(left_value) => {
+                match rhs {
+                    BisayaValue::String(right_value) => {
+                        BisayaValue::String(left_value + &*right_value)
+                    }
+                    _ => { unreachable!("Cannot Add different types") }
+                }
+            }
+            BisayaValue::Boolean(_) => {
+                unreachable!("Cannot Add Booleans")
+            }
+            BisayaValue::Identifier(_) => {
+                unreachable!("Cannot Add Identifiers")
+            }
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq)]
-enum MathOp {
+pub enum MathOp {
     Add,
     Sub,
     Mul,
@@ -30,7 +91,7 @@ enum MathOp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum Expr {
+pub enum Expr {
     BinOp {
         left: Box<Expr>,
         op: MathOp,
@@ -39,16 +100,19 @@ enum Expr {
     Constant(BisayaValue)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BisayaNode {
     Program {
         statements: Vec<BisayaNode>
     },
-    Variable {
+    VariableDeclaration {
         name: String,
         value: Expr
     },
-    None
+    FunctionCall {
+        function_name: String,
+        args: Vec<Expr>
+    }
 }
 
 // IntermediateForOperatorPrecedence
@@ -233,6 +297,21 @@ impl BisayaParser {
                                 }
 
                             }
+                            Rule::string_literal => {
+                                let mut string_value = value.as_span().as_str().to_string();
+                                string_value.pop(); string_value.remove(0);
+
+                                IntermediateOP::Factor(
+                                    BisayaValue::String(string_value)
+                                )
+                            }
+                            Rule::identifier => {
+                                let mut string_value = value.as_span().as_str().to_string();
+
+                                IntermediateOP::Factor(
+                                    BisayaValue::Identifier(string_value)
+                                )
+                            }
                             _ => unimplemented!()
                         }
                     }
@@ -251,15 +330,31 @@ impl BisayaParser {
     }
     fn parse_value(pair: Pair<Rule>) -> Option<BisayaNode> {
         match pair.as_rule() {
-            Rule::variable => {
+            Rule::variable_declaration => {
                 let mut parts: VecDeque<Pair<Rule>> = pair.into_inner().collect();
                 let name = Self::parse_value_str(parts.pop_front().unwrap());
                 let value = Self::parse_expr(parts.pop_front().unwrap());
                 Some(
-                    BisayaNode::Variable
+                    BisayaNode::VariableDeclaration
                     {
                         name,
                         value
+                    }
+                )
+            }
+            Rule::function_call => {
+                let mut pairs: VecDeque<Pair<Rule>> = pair.into_inner().collect();
+                let name = Self::parse_value_str(pairs.pop_front().unwrap());
+                let mut arguments = vec![];
+                for arg in pairs {
+                    arguments.push(
+                        Self::parse_expr(arg)
+                    )
+                }
+                Some(
+                    BisayaNode::FunctionCall {
+                        function_name: name,
+                        args: arguments,
                     }
                 )
             }
