@@ -1,3 +1,5 @@
+# THIS LANGUAGE IS WIP
+
 # Bisaya lang
 isa ka Programming language nga ang gigamit kay bisaya
 
