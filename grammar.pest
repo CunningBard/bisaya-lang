@@ -1,0 +1,67 @@
+
+natural_newline = _{"\r\n" | "\n"}
+explicit_newline = _{";"}
+new_line = _{natural_newline | explicit_newline}
+line_terminator = _{new_line | EOI}
+
+
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+string = @{ "\"" ~ (("\\\"" | !"\"")  ~ ANY)* ~ "\"" }
+float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+integer = @{ ASCII_DIGIT+ }
+boolean = @{ "true" | "false" }
+
+EQ_OPS = { "==" | "!="  | ">=" | "<=" | ">" | "<"}
+SUM_OPS = { "+" | "-" }
+PROD_OPS = { "*" | "/" }
+
+expr = {
+    bare_expr |
+    function_call
+}
+function_call = { identifier ~ "(" ~ expr* ~ ("," ~ expr)* ~ ")" }
+bare_expr = { sum ~ ((EQ_OPS) ~ sum)* }
+sum = { product ~ ((SUM_OPS) ~ product)* }
+product = { term ~ ((PROD_OPS) ~ term)* }
+term = {
+    string |
+    float |
+    integer |
+    boolean |
+    function_call |
+    identifier |
+    "(" ~ expr ~ ")"
+}
+
+variable_assignment = {"deklara" ~ identifier ~ "=" ~ expr}
+variable_reassignment = { identifier ~ "=" ~ expr}
+function_call_statement = { function_call }
+conditional_if = {"kon" ~ expr ~ block }
+conditional_else_if = {"kon" ~ "lain" ~ expr ~ block }
+conditional_else = {"lain" ~ block }
+conditional = { conditional_if ~ (conditional_else_if)* ~ (conditional_else)? }
+while_loop = {"samtang" ~ expr ~ block }
+break_kw = {"buwag"}
+continue_kw = {"tiwas"}
+
+
+block = { "{" ~ statements ~ "}"}
+
+statements = _{
+    new_line* ~(
+    (
+        variable_assignment
+        | function_call_statement
+        | conditional
+        | variable_reassignment
+        | while_loop
+        | break_kw
+        | continue_kw
+    )
+    ~ new_line ~ new_line*)*
+}
+
+
+program = _{ SOI ~ statements ~ EOI }
+
+WHITESPACE = _{ " " | "\t" }
