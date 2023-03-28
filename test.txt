@@ -1,0 +1,12 @@
+deklara i = 0
+
+samtang i < 10 {
+    deklara j = 0
+
+    samtang j < 10 {
+        println(i * j)
+        j = j + 1
+    }
+
+    i = i + 1
+}
