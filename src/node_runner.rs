@@ -1,12 +1,12 @@
 use std::collections::{HashMap, VecDeque};
-use crate::eval_parser::{ExprAst, Value};
+use crate::eval_parser::{ExprAst, EvalValue};
 use crate::parser::{Statement, Block};
 
 const LOOP_LIMIT: usize = 100000;
 
 
 pub struct NodeRunner {
-    locals: HashMap<String, Value>,
+    locals: HashMap<String, EvalValue>,
     locals_tracker: Vec<String>,
     locals_scope: Vec<usize>,
 
@@ -22,25 +22,25 @@ impl NodeRunner {
         }
     }
 
-    pub fn get_value_type(&self, val: &Value) -> i32 {
+    pub fn get_value_type(&self, val: &EvalValue) -> i32 {
         match val {
-            Value::Reference { val } => {
+            EvalValue::Reference { val } => {
                 self.get_value_type(self.locals.get(val).ok_or_else(|| {
                     panic!("couldnt find variable {}", val)
                 }).unwrap())
             }
-            Value::IntegerLiteral { .. } => { 1 }
-            Value::Stringliteral { .. } => { 2 }
-            Value::FloatLiteral { .. } => { 3 }
-            Value::BooleanLiteral { .. } => { 4 }
+            EvalValue::IntegerLiteral { .. } => { 1 }
+            EvalValue::Stringliteral { .. } => { 2 }
+            EvalValue::FloatLiteral { .. } => { 3 }
+            EvalValue::BooleanLiteral { .. } => { 4 }
         }
     }
 
-    pub fn evaluate_expr(&mut self, expr: ExprAst) -> Value {
+    pub fn evaluate_expr(&mut self, expr: ExprAst) -> EvalValue {
         match expr {
             ExprAst::Value { val } => {
                 match val {
-                    Value::Reference { val } => {
+                    EvalValue::Reference { val } => {
                         self.locals.get(&*val).ok_or_else(|| {
                             panic!("couldnt find variable {}", val)
                         }).unwrap().clone()
@@ -51,7 +51,7 @@ impl NodeRunner {
             ExprAst::FunctionCall { name, args } => {
                 match self.handle_function_call(name, args) {
                     Some(val) => { val }
-                    None => { Value::Stringliteral { val: "NONE".to_string() } }
+                    None => { EvalValue::Stringliteral { val: "NONE".to_string() } }
                 }
             }
             ExprAst::Addition { lhs, rhs } => {
@@ -62,11 +62,11 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::IntegerLiteral { val: (lhs.get_int() + rhs.get_int()).to_string() } }
-                    (2, 2) => { Value::Stringliteral { val: lhs.get_string() + &rhs.get_string() } }
-                    (3, 3) => { Value::FloatLiteral { val: (lhs.get_float() + rhs.get_float()).to_string() } }
-                    (1, 3) => { Value::FloatLiteral { val: (lhs.get_int() as f32 + rhs.get_float()).to_string() } }
-                    (3, 1) => { Value::FloatLiteral { val: (lhs.get_float() + rhs.get_int() as f32).to_string() } }
+                    (1, 1) => { EvalValue::IntegerLiteral { val: (lhs.get_int() + rhs.get_int()).to_string() } }
+                    (2, 2) => { EvalValue::Stringliteral { val: lhs.get_string() + &rhs.get_string() } }
+                    (3, 3) => { EvalValue::FloatLiteral { val: (lhs.get_float() + rhs.get_float()).to_string() } }
+                    (1, 3) => { EvalValue::FloatLiteral { val: (lhs.get_int() as f32 + rhs.get_float()).to_string() } }
+                    (3, 1) => { EvalValue::FloatLiteral { val: (lhs.get_float() + rhs.get_int() as f32).to_string() } }
                     _ => unreachable!("invalid types for addition")
                 }
             }
@@ -78,10 +78,10 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::IntegerLiteral { val: (lhs.get_int() - rhs.get_int()).to_string() } }
-                    (3, 3) => { Value::FloatLiteral { val: (lhs.get_float() - rhs.get_float()).to_string() } }
-                    (1, 3) => { Value::FloatLiteral { val: (lhs.get_int() as f32 - rhs.get_float()).to_string() } }
-                    (3, 1) => { Value::FloatLiteral { val: (lhs.get_float() - rhs.get_int() as f32).to_string() } }
+                    (1, 1) => { EvalValue::IntegerLiteral { val: (lhs.get_int() - rhs.get_int()).to_string() } }
+                    (3, 3) => { EvalValue::FloatLiteral { val: (lhs.get_float() - rhs.get_float()).to_string() } }
+                    (1, 3) => { EvalValue::FloatLiteral { val: (lhs.get_int() as f32 - rhs.get_float()).to_string() } }
+                    (3, 1) => { EvalValue::FloatLiteral { val: (lhs.get_float() - rhs.get_int() as f32).to_string() } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -93,10 +93,10 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::FloatLiteral { val: (lhs.get_int() as f32 / rhs.get_int() as f32).to_string() } }
-                    (3, 3) => { Value::FloatLiteral { val: (lhs.get_float() / rhs.get_float()).to_string() } }
-                    (1, 3) => { Value::FloatLiteral { val: (lhs.get_int() as f32 / rhs.get_float()).to_string() } }
-                    (3, 1) => { Value::FloatLiteral { val: (lhs.get_float() / rhs.get_int() as f32).to_string() } }
+                    (1, 1) => { EvalValue::FloatLiteral { val: (lhs.get_int() as f32 / rhs.get_int() as f32).to_string() } }
+                    (3, 3) => { EvalValue::FloatLiteral { val: (lhs.get_float() / rhs.get_float()).to_string() } }
+                    (1, 3) => { EvalValue::FloatLiteral { val: (lhs.get_int() as f32 / rhs.get_float()).to_string() } }
+                    (3, 1) => { EvalValue::FloatLiteral { val: (lhs.get_float() / rhs.get_int() as f32).to_string() } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -108,10 +108,10 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::IntegerLiteral { val: (lhs.get_int() * rhs.get_int()).to_string() } }
-                    (3, 3) => { Value::FloatLiteral { val: (lhs.get_float() * rhs.get_float()).to_string() } }
-                    (1, 3) => { Value::FloatLiteral { val: (lhs.get_int() as f32 * rhs.get_float()).to_string() } }
-                    (3, 1) => { Value::FloatLiteral { val: (lhs.get_float() * rhs.get_int() as f32).to_string() } }
+                    (1, 1) => { EvalValue::IntegerLiteral { val: (lhs.get_int() * rhs.get_int()).to_string() } }
+                    (3, 3) => { EvalValue::FloatLiteral { val: (lhs.get_float() * rhs.get_float()).to_string() } }
+                    (1, 3) => { EvalValue::FloatLiteral { val: (lhs.get_int() as f32 * rhs.get_float()).to_string() } }
+                    (3, 1) => { EvalValue::FloatLiteral { val: (lhs.get_float() * rhs.get_int() as f32).to_string() } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -123,11 +123,11 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::BooleanLiteral { val: lhs.get_int() == rhs.get_int() } }
-                    (2, 2) => { Value::BooleanLiteral { val: lhs.get_string() == rhs.get_string() } }
-                    (3, 3) => { Value::BooleanLiteral { val: lhs.get_float() == rhs.get_float() } }
-                    (1, 3) => { Value::BooleanLiteral { val: lhs.get_int() as f32 == rhs.get_float() } }
-                    (3, 1) => { Value::BooleanLiteral { val: lhs.get_float() == rhs.get_int() as f32 } }
+                    (1, 1) => { EvalValue::BooleanLiteral { val: lhs.get_int() == rhs.get_int() } }
+                    (2, 2) => { EvalValue::BooleanLiteral { val: lhs.get_string() == rhs.get_string() } }
+                    (3, 3) => { EvalValue::BooleanLiteral { val: lhs.get_float() == rhs.get_float() } }
+                    (1, 3) => { EvalValue::BooleanLiteral { val: lhs.get_int() as f32 == rhs.get_float() } }
+                    (3, 1) => { EvalValue::BooleanLiteral { val: lhs.get_float() == rhs.get_int() as f32 } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -139,11 +139,11 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::BooleanLiteral { val: lhs.get_int() != rhs.get_int() } }
-                    (2, 2) => { Value::BooleanLiteral { val: lhs.get_string() != rhs.get_string() } }
-                    (3, 3) => { Value::BooleanLiteral { val: lhs.get_float() != rhs.get_float() } }
-                    (1, 3) => { Value::BooleanLiteral { val: lhs.get_int() as f32 != rhs.get_float() } }
-                    (3, 1) => { Value::BooleanLiteral { val: lhs.get_float() != rhs.get_int() as f32 } }
+                    (1, 1) => { EvalValue::BooleanLiteral { val: lhs.get_int() != rhs.get_int() } }
+                    (2, 2) => { EvalValue::BooleanLiteral { val: lhs.get_string() != rhs.get_string() } }
+                    (3, 3) => { EvalValue::BooleanLiteral { val: lhs.get_float() != rhs.get_float() } }
+                    (1, 3) => { EvalValue::BooleanLiteral { val: lhs.get_int() as f32 != rhs.get_float() } }
+                    (3, 1) => { EvalValue::BooleanLiteral { val: lhs.get_float() != rhs.get_int() as f32 } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -155,10 +155,10 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::BooleanLiteral { val: lhs.get_int() >= rhs.get_int() } }
-                    (3, 3) => { Value::BooleanLiteral { val: lhs.get_float() >= rhs.get_float() } }
-                    (1, 3) => { Value::BooleanLiteral { val: lhs.get_int() as f32 >= rhs.get_float() } }
-                    (3, 1) => { Value::BooleanLiteral { val: lhs.get_float() >= rhs.get_int() as f32 } }
+                    (1, 1) => { EvalValue::BooleanLiteral { val: lhs.get_int() >= rhs.get_int() } }
+                    (3, 3) => { EvalValue::BooleanLiteral { val: lhs.get_float() >= rhs.get_float() } }
+                    (1, 3) => { EvalValue::BooleanLiteral { val: lhs.get_int() as f32 >= rhs.get_float() } }
+                    (3, 1) => { EvalValue::BooleanLiteral { val: lhs.get_float() >= rhs.get_int() as f32 } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -170,10 +170,10 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::BooleanLiteral { val: lhs.get_int() <= rhs.get_int() } }
-                    (3, 3) => { Value::BooleanLiteral { val: lhs.get_float() <= rhs.get_float() } }
-                    (1, 3) => { Value::BooleanLiteral { val: lhs.get_int() as f32 <= rhs.get_float() } }
-                    (3, 1) => { Value::BooleanLiteral { val: lhs.get_float() <= rhs.get_int() as f32 } }
+                    (1, 1) => { EvalValue::BooleanLiteral { val: lhs.get_int() <= rhs.get_int() } }
+                    (3, 3) => { EvalValue::BooleanLiteral { val: lhs.get_float() <= rhs.get_float() } }
+                    (1, 3) => { EvalValue::BooleanLiteral { val: lhs.get_int() as f32 <= rhs.get_float() } }
+                    (3, 1) => { EvalValue::BooleanLiteral { val: lhs.get_float() <= rhs.get_int() as f32 } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -185,10 +185,10 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::BooleanLiteral { val: lhs.get_int() > rhs.get_int() } }
-                    (3, 3) => { Value::BooleanLiteral { val: lhs.get_float() > rhs.get_float() } }
-                    (1, 3) => { Value::BooleanLiteral { val: lhs.get_int() as f32 > rhs.get_float() } }
-                    (3, 1) => { Value::BooleanLiteral { val: lhs.get_float() > rhs.get_int() as f32 } }
+                    (1, 1) => { EvalValue::BooleanLiteral { val: lhs.get_int() > rhs.get_int() } }
+                    (3, 3) => { EvalValue::BooleanLiteral { val: lhs.get_float() > rhs.get_float() } }
+                    (1, 3) => { EvalValue::BooleanLiteral { val: lhs.get_int() as f32 > rhs.get_float() } }
+                    (3, 1) => { EvalValue::BooleanLiteral { val: lhs.get_float() > rhs.get_int() as f32 } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
@@ -200,17 +200,17 @@ impl NodeRunner {
                 let rhs_type = self.get_value_type(&rhs);
 
                 return match (lhs_type, rhs_type) {
-                    (1, 1) => { Value::BooleanLiteral { val: lhs.get_int() < rhs.get_int() } }
-                    (3, 3) => { Value::BooleanLiteral { val: lhs.get_float() < rhs.get_float() } }
-                    (1, 3) => { Value::BooleanLiteral { val: (lhs.get_int() as f32) < rhs.get_float() } }
-                    (3, 1) => { Value::BooleanLiteral { val: lhs.get_float() < rhs.get_int() as f32 } }
+                    (1, 1) => { EvalValue::BooleanLiteral { val: lhs.get_int() < rhs.get_int() } }
+                    (3, 3) => { EvalValue::BooleanLiteral { val: lhs.get_float() < rhs.get_float() } }
+                    (1, 3) => { EvalValue::BooleanLiteral { val: (lhs.get_int() as f32) < rhs.get_float() } }
+                    (3, 1) => { EvalValue::BooleanLiteral { val: lhs.get_float() < rhs.get_int() as f32 } }
                     _ => unreachable!("invalid types for subtraction")
                 }
             }
         }
     }
 
-    fn handle_function_call(&mut self, name: String, mut args: Vec<ExprAst>) -> Option<Value> {
+    fn handle_function_call(&mut self, name: String, mut args: Vec<ExprAst>) -> Option<EvalValue> {
         if ["print", "println", "format"].contains(&name.as_str()) {
             self.call_builtin_function(name, args.into_iter().collect())
         } else {
@@ -218,10 +218,10 @@ impl NodeRunner {
         }
     }
 
-    fn call_builtin_function(&mut self, name: String, mut args: VecDeque<ExprAst>) -> Option<Value> {
+    fn call_builtin_function(&mut self, name: String, mut args: VecDeque<ExprAst>) -> Option<EvalValue> {
         match name.as_str() {
             "print" => {
-                let mut args = args.into_iter().map(|arg| self.evaluate_expr(arg)).collect::<Vec<Value>>();
+                let mut args = args.into_iter().map(|arg| self.evaluate_expr(arg)).collect::<Vec<EvalValue>>();
                 let mut output = String::new();
                 for arg in args {
                     output.push_str(&arg.to_string());
@@ -232,7 +232,7 @@ impl NodeRunner {
                 None
             },
             "println" => {
-                let mut args = args.into_iter().map(|arg| self.evaluate_expr(arg)).collect::<Vec<Value>>();
+                let mut args = args.into_iter().map(|arg| self.evaluate_expr(arg)).collect::<Vec<EvalValue>>();
                 let mut output = String::new();
                 for arg in args {
                     output.push_str(&arg.to_string());
@@ -248,26 +248,26 @@ impl NodeRunner {
                 }
 
                 let mut string = match self.evaluate_expr(args.pop_front().unwrap()) {
-                    Value::Stringliteral { val } => val,
+                    EvalValue::Stringliteral { val } => val,
                     _ => panic!("format function takes a string as first argument")
                 };
 
                 while args.len() > 0 {
                     let replace_with = args.pop_front().unwrap();
                     match self.evaluate_expr(replace_with) {
-                        Value::IntegerLiteral { val } |
-                        Value::Stringliteral { val } |
-                        Value::FloatLiteral { val } => {
+                        EvalValue::IntegerLiteral { val } |
+                        EvalValue::Stringliteral { val } |
+                        EvalValue::FloatLiteral { val } => {
                             string = string.replacen("{}", &val.to_string(), 1);
                         }
-                        Value::BooleanLiteral { val } => {
+                        EvalValue::BooleanLiteral { val } => {
                             string = string.replacen("{}", &val.to_string(), 1);
                         }
                         _ => unreachable!("how?")
                     }
                 }
 
-                Some(Value::Stringliteral { val: string })
+                Some(EvalValue::Stringliteral { val: string })
             }
             _ => unimplemented!("builtin function {} is not implemented", name)
         }
@@ -303,7 +303,7 @@ impl NodeRunner {
             },
             Statement::Conditional { condition, body, else_if_conditions, else_body } => {
                 let result = match self.evaluate_expr(condition) {
-                    Value::BooleanLiteral { val } => { val }
+                    EvalValue::BooleanLiteral { val } => { val }
                     _ => unreachable!("invalid condition")
                 };
 
@@ -314,7 +314,7 @@ impl NodeRunner {
                     let mut ran = false;
                     for (condition, body) in else_if_conditions {
                         match self.evaluate_expr(condition) {
-                            Value::BooleanLiteral { val } => {
+                            EvalValue::BooleanLiteral { val } => {
                                 if val {
                                     let res = self.run(body, from_loop);
                                     if res.is_some() { return res }
@@ -335,7 +335,7 @@ impl NodeRunner {
             }
             Statement::WhileLoop { condition, body } => {
                 while match self.evaluate_expr(condition.clone()) {
-                    Value::BooleanLiteral { val } => { val }
+                    EvalValue::BooleanLiteral { val } => { val }
                     _ => unreachable!("invalid condition")
                 } {
                     let res = self.run(body.clone(), true);
