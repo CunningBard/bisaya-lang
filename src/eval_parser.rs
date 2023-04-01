@@ -4,9 +4,10 @@ use std::fs;
 use pest::iterators::{Pair, Pairs};
 
 use crate::parser::Rule;
+use crate::virtual_machine::{BoolValue, FloatValue, Instruction, IntValue, StringValue, ValueType};
 
 #[derive(Debug, Clone)]
-pub enum Value{
+pub enum EvalValue {
     Reference { val: String },
     IntegerLiteral { val: String },
     Stringliteral { val: String },
@@ -16,7 +17,7 @@ pub enum Value{
 
 #[derive(Debug, Clone)]
 pub enum ExprAst {
-    Value {val: Value },
+    Value {val: EvalValue },
     FunctionCall { name: String, args: Vec<ExprAst> },
     Addition { lhs: Box<ExprAst>, rhs: Box<ExprAst>},
     Subtraction { lhs: Box<ExprAst>, rhs: Box<ExprAst>},
@@ -30,7 +31,7 @@ pub enum ExprAst {
     Lt { lhs: Box<ExprAst>, rhs: Box<ExprAst>},
 }
 
-impl Value {
+impl EvalValue {
     pub fn get_int(&self) -> i32 {
         match self {
             Self::IntegerLiteral { val } => { val.parse::<i32>().unwrap() }
@@ -59,7 +60,7 @@ impl Value {
         }
     }
 
-    pub fn get_reference(&self, hash: HashMap<String, Value>) -> Value {
+    pub fn get_reference(&self, hash: HashMap<String, EvalValue>) -> EvalValue {
         match self {
             Self::Reference { val } => {
                 hash.get(val).ok_or_else(|| { panic!("couldnt find {}", val) }).unwrap().clone()
@@ -69,7 +70,7 @@ impl Value {
     }
 }
 
-impl ToString for Value {
+impl ToString for EvalValue {
     fn to_string(&self) -> String {
         match self {
             Self::Reference { val } => { val.clone() }
@@ -124,9 +125,10 @@ impl ExprAst {
     }
 }
 
+
 #[derive(Debug)]
 enum StackItems{
-    Value(Value),
+    Value(EvalValue),
     ValueBool(bool),
     Operation(u8),
     FunctionCall(String, Vec<StackItems>),
@@ -312,14 +314,14 @@ fn rule_expr_to_eval_expr(rule: Pair<Rule>) -> ExprAst
         }
         Rule::integer => {
             ExprAst::Value {
-                val: Value::IntegerLiteral {
+                val: EvalValue::IntegerLiteral {
                     val: rule.as_span().as_str().to_string()
                 }
             }
         }
         Rule::string => {
             ExprAst::Value {
-                val: Value::Stringliteral {
+                val: EvalValue::Stringliteral {
                     val: {
                         let str = parse_str(rule.as_span().as_str());
                         str[1..str.len() - 1].to_string()
@@ -329,21 +331,21 @@ fn rule_expr_to_eval_expr(rule: Pair<Rule>) -> ExprAst
         }
         Rule::float => {
             ExprAst::Value {
-                val: Value::FloatLiteral {
+                val: EvalValue::FloatLiteral {
                     val: rule.as_span().as_str().to_string()
                 }
             }
         }
         Rule::boolean => {
             ExprAst::Value {
-                val: Value::BooleanLiteral {
+                val: EvalValue::BooleanLiteral {
                     val: rule.as_span().as_str() == "true"
                 }
             }
         }
         Rule::identifier => {
             ExprAst::Value {
-                val: Value::Reference {
+                val: EvalValue::Reference {
                     val: rule.as_span().as_str().to_string()
                 }
             }
