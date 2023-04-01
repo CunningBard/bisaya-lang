@@ -8,7 +8,7 @@ line_terminator = _{new_line | EOI}
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 string = @{ "\"" ~ (("\\\"" | !"\"")  ~ ANY)* ~ "\"" }
 float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
-integer = @{ ASCII_DIGIT+ }
+integer = @{ ("-")? ~ ASCII_DIGIT+ }
 boolean = @{ "true" | "false" }
 
 EQ_OPS = { "==" | "!="  | ">=" | "<=" | ">" | "<"}
