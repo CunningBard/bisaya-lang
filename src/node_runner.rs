@@ -365,6 +365,7 @@ impl NodeRunner {
 
                 panic!("continue outside of loop")
             }
+            _ => { unimplemented!("statement not implemented") }
         }
         None
     }
