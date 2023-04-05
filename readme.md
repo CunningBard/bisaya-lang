@@ -3,8 +3,29 @@ Isa ka Linguahi para sa Programming pero naa siya sa Bisaya.
 
 # Syntax
 ```
-deklara = 12;
+// ang semi-colon( ';' ) kay optional
 
+proseso kuhaa_ang_pangalan() {
+    return "BisayaLang"
+}
+
+deklara edad = 0;
+deklara pangalan = kuhaa_ang_pangalan();
+
+println(format("Ang {}, kay {} anyos pa", pangalan, edad));
+
+// isa ka linya nga comment
+/* 
+    daghan na linya nga comment
+*/
+
+klase ProgrammingLanguage {
+    name,
+    age,
+    type
+}
+
+deklara bisaya_lang = ProgrammingLanguage(pangalan, edad, "Interpreted");
 
 ```
 
