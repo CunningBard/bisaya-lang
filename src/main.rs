@@ -13,20 +13,20 @@ use pest::Parser;
 use crate::parser::{Rule, BareParser, parse_file_data, Statement};
 use crate::eval_parser::{ExprAst, parse_expressions};
 use crate::node_runner::NodeRunner;
-use crate::virtual_machine::{Instruction, IntValue, StructCreator, Value, ValueType, VirtualMachine};
+use crate::virtual_machine::{Instruction, IntValue, ObjectCreator, Value, ValueType, VirtualMachine};
 
 fn main() {
     let file_contents = fs::read_to_string("test.txt").expect("couldnt read file");
+    println!("{:?}", file_contents);
     let statements = parse_file_data(&file_contents);
     println!("------ Parsed Statements ----------");
     println!("{:#?}", statements);
     println!("------ Compiled Instruction ----------");
-    let instructions =  instruction_compiler::compile(statements);
+    let (instructions, function_locations, class_creators) =  instruction_compiler::compile(statements);
     for instruction in &instructions {
         println!("{:?}", instruction)
     }
     println!("------ Virtual Machine Output ----------");
-    let mut vm = VirtualMachine::new(instructions);
+    let mut vm = VirtualMachine::new(instructions, function_locations, class_creators);
     vm.run();
-    // println!("{:#?}", vm.get_heap())
 }

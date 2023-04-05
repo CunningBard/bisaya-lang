@@ -1,2 +1,8 @@
-deklara age = 20 * 2
-println(age)
+klase Tao {
+    pangalan,
+    edad
+}
+deklara pangalan = "Mark";
+deklara edad = 134
+deklara ako = Tao(pangalan, edad);
+println(format("Maayong adlaw, {}", ako));
