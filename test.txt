@@ -1,0 +1,20 @@
+// ang semi-colon( ';' ) kay optional
+
+proseso kuhaa_ang_pangalan() {
+    balik "BisayaLang";
+}
+
+deklara edad = 0;
+deklara pangalan = kuhaa_ang_pangalan();
+
+println(format("Ang {}, kay {} anyos pa", pangalan, edad));
+
+// usa ka comment
+
+klase ProgrammingLanguage {
+    name,
+    age,
+    type
+}
+
+deklara bisaya_lang = ProgrammingLanguage(pangalan, edad, "Interpreted");

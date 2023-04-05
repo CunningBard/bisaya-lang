@@ -13,18 +13,18 @@ boolean = @{ "true" | "false" }
 member_access = { "." ~ identifier }
 member_call = { "." ~ function_call }
 
-EQ_OPS = { "==" | "!="  | ">=" | "<=" | ">" | "<"}
-SUM_OPS = { "+" | "-" }
-PROD_OPS = { "*" | "/" }
+eq_ops = { "==" | "!="  | ">=" | "<=" | ">" | "<"}
+sum_ops = { "+" | "-" }
+prod_ops = { "*" | "/" }
 
 expr = {
     bare_expr |
     function_call
 }
 function_call = { identifier ~ "(" ~ expr* ~ ("," ~ expr)* ~ ")" }
-bare_expr = { sum ~ ((EQ_OPS) ~ sum)* }
-sum = { product ~ ((SUM_OPS) ~ product)* }
-product = { term ~ ((PROD_OPS) ~ term)* }
+bare_expr = { sum ~ ((eq_ops) ~ sum)* }
+sum = { product ~ ((sum_ops) ~ product)* }
+product = { term ~ ((prod_ops) ~ term)* }
 term = {
     (string |
     float |
@@ -49,8 +49,7 @@ while_loop = {"samtang" ~ expr ~ block }
 break_kw = {"buwag"}
 continue_kw = {"tiwas"}
 return_kw = {"balik" ~ expr* ~ ("," ~ expr*)* ~ ","*}
-COMMENT = { "//" ~ (!new_line ~ ANY)* }
-MULTILINE_COMMENT = { "/*" ~ (!"/*" ~ ANY)* ~ "*/" }
+comment = { "//" ~ (!natural_newline ~ ANY)* }
 
 
 block = { "{" ~ inner_statements ~ "}"}
@@ -65,8 +64,7 @@ inner_statement = _{
         | break_kw
         | continue_kw
         | return_kw
-        | COMMENT
-        | MULTILINE_COMMENT
+        | comment
     )
     ~ new_line
 }
@@ -78,12 +76,11 @@ outer_statement = _{
         inner_statement
         | function_declaration
         | class_declaration
-        | COMMENT
-        | MULTILINE_COMMENT
+        | comment
     ) ~ new_line*)
 }
 
 
-program = _{ SOI ~ outer_statement* }
+program = _{ SOI ~ outer_statement* ~ EOI}
 
 WHITESPACE = _{ " " | "\t" }

@@ -179,7 +179,10 @@ fn parse_statement(pair: Pair<Rule>) -> Option<Statement> {
             }
             Some(Statement::ClassDeclaration { class_name, members })
         }
-        Rule::COMMENT | Rule::MULTILINE_COMMENT => {None}
+        Rule::comment => {
+            // println!("{}", pair.as_str());
+            None
+        }
         _ => unreachable!("not a statement: {:?}", pair)
     }
 
@@ -195,14 +198,18 @@ pub fn parse_file_data(file_data: &str) -> Vec<Statement> {
 
     let mut statements = Vec::new();
 
-
+    // println!("{:#?}", res);
     for pair in res {
+        // println!("{:?}", pair);
         match pair.as_rule() {
             Rule::EOI => { break }
             _ => {
                 match parse_statement(pair) {
-                    Some(statement) => statements.push(statement),
-                    None => {}
+                    Some(statement) => {
+                        println!("{:#?}", statement);
+                        statements.push(statement)
+                    },
+                    None => { println!("No") }
                 }
             }
         }

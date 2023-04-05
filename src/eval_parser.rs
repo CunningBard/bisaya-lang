@@ -249,7 +249,7 @@ fn rule_expr_to_eval_expr(rule: Pair<Rule>) -> ExprAst
             let mut items = VecDeque::new();
             for pair in pairs {
                 match pair.as_rule() {
-                    Rule::EQ_OPS => {
+                    Rule::eq_ops => {
                         items.push_back(
                             StackItems::Operation(str_to_op_no(pair.as_span().as_str()))
                         )
@@ -271,7 +271,7 @@ fn rule_expr_to_eval_expr(rule: Pair<Rule>) -> ExprAst
             let mut items = VecDeque::new();
             for pair in pairs {
                 match pair.as_rule() {
-                    Rule::SUM_OPS => {
+                    Rule::sum_ops => {
                         items.push_back(
                             StackItems::Operation(str_to_op_no(pair.as_span().as_str()))
                         )
@@ -295,7 +295,7 @@ fn rule_expr_to_eval_expr(rule: Pair<Rule>) -> ExprAst
             let mut items = VecDeque::new();
             for pair in pairs {
                 match pair.as_rule() {
-                    Rule::PROD_OPS => {
+                    Rule::prod_ops => {
                         items.push_back(
                             StackItems::Operation(str_to_op_no(pair.as_span().as_str()))
                         )
