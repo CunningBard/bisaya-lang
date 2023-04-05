@@ -6,7 +6,7 @@ Isa ka Linguahi para sa Programming pero naa siya sa Bisaya.
 // ang semi-colon( ';' ) kay optional
 
 proseso kuhaa_ang_pangalan() {
-    return "BisayaLang"
+    balik "BisayaLang";
 }
 
 deklara edad = 0;
@@ -14,10 +14,7 @@ deklara pangalan = kuhaa_ang_pangalan();
 
 println(format("Ang {}, kay {} anyos pa", pangalan, edad));
 
-// isa ka linya nga comment
-/* 
-    daghan na linya nga comment
-*/
+// usa ka comment
 
 klase ProgrammingLanguage {
     name,
@@ -26,7 +23,6 @@ klase ProgrammingLanguage {
 }
 
 deklara bisaya_lang = ProgrammingLanguage(pangalan, edad, "Interpreted");
-
 ```
 
 
