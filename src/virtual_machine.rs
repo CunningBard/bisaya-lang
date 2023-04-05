@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::collections::vec_deque::VecDeque;
 
 
-const BUILTIN_FUNCTIONS: [&str; 3] = ["print", "println", "format"];
+const BUILTIN_FUNCTIONS: [&str; 4] = ["print", "println", "format", "assert"];
 
 
 #[derive(Clone, Debug)]
@@ -11,6 +11,127 @@ pub enum IntValue {
     Int16(i16),
     Int32(i32),
     Int64(i64),
+}
+
+#[derive(Clone, Debug)]
+enum CharValue {
+    Char(char),
+}
+
+#[derive(Clone, Debug)]
+pub struct  StringValue {
+    value: String
+}
+
+#[derive(Clone, Debug)]
+pub struct BoolValue {
+    value: bool,
+}
+
+#[derive(Clone, Debug)]
+pub enum FloatValue {
+    Float32(f32),
+    Float64(f64),
+}
+
+#[derive(Clone, Debug)]
+pub enum ValueType {
+    Int(IntValue),
+    Float(FloatValue),
+    Bool(BoolValue),
+    // Char(Char),
+    String(StringValue),
+    // Vector(Vec<Value>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Value {
+    Object(Object),
+    Value(ValueType)
+}
+
+impl Value {
+    fn to_val(&self) -> ValueType {
+        match self {
+            Value::Object(s) => s.get_value().unwrap().clone(),
+            Value::Value(v) => v.clone()
+        }
+    }
+    pub fn as_string(&self) -> String {
+        match self {
+            Value::Object(s) => {
+                match s.get_value() {
+                    Some(v) => v.as_string(),
+                    None => {
+                        format!("{:?} {:?}", s.name, s.values)
+                    }
+                }
+            },
+            Value::Value(v) => v.as_string()
+        }
+    }
+    pub fn from_int_val(val: IntValue) -> Self {
+        Self::Value(ValueType::Int(val))
+    }
+
+    pub fn from_bool(val: bool) -> Self {
+        Self::Value(ValueType::Bool(BoolValue::new(val)))
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct Object {
+    name: String,
+    values: HashMap<String, Value>
+}
+
+impl BoolValue {
+    pub fn new(value: bool) -> Self {
+        BoolValue { value }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Instruction {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Eq,
+    Neq,
+    Lt,
+    Gt,
+    LtEq,
+    GtEq,
+    Load(String),
+    Store(String),
+    NewVariable(String),
+    Delete(String),
+    Jump(usize),
+    JumpIfFalse(usize),
+    JumpIfTrue(usize),
+    Call(String),
+    Push(ValueType),
+    Pop,
+    Nop,
+    Return,
+    Clone,
+    Swap,
+    Rotate,
+    MoveBack(usize)
+}
+
+
+#[derive(Debug)]
+pub struct VirtualMachine {
+    stack: Vec<Value>,
+    rom: Vec<Instruction>,
+    pc: usize,
+    heap: HashMap<String, Object>,
+    functions: HashMap<String, usize>,
+    call_stack: Vec<usize>,
+    class_definitions: HashMap<String, ObjectCreator>,
 }
 
 impl IntValue {
@@ -61,39 +182,135 @@ impl IntValue {
             other.get_byte_size()
         }
     }
+    pub fn add_8(lhs: i8, rhs: i8) -> IntValue {
+        match lhs.checked_add(rhs) {
+            Some(r) => IntValue::Int8(r),
+            None => { Self::add_16(lhs as i16, rhs as i16) }
+        }
+    }
+    pub fn add_16(lhs: i16, rhs: i16) -> IntValue {
+        match lhs.checked_add(rhs) {
+            Some(r) => IntValue::Int16(r),
+            None => { Self::add_32(lhs as i32, rhs as i32) }
+        }
+    }
+    pub fn add_32(lhs: i32, rhs: i32) -> IntValue {
+        match lhs.checked_add(rhs) {
+            Some(r) => IntValue::Int32(r),
+            None => { Self::add_64(lhs as i64, rhs as i64) }
+        }
+    }
+    pub fn add_64(lhs: i64, rhs: i64) -> IntValue {
+        match lhs.checked_add(rhs) {
+            Some(r) => IntValue::Int64(r),
+            None => { panic!("Integer overflow") }
+        }
+    }
     pub fn add(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            1 => IntValue::Int8(self.as_i8() + other.as_i8()),
-            2 => IntValue::Int16(self.as_i16() + other.as_i16()),
-            4 => IntValue::Int32(self.as_i32() + other.as_i32()),
-            8 => IntValue::Int64(self.as_i64() + other.as_i64()),
+            1 => Self::add_8(self.as_i8(), other.as_i8()),
+            2 => Self::add_16(self.as_i16(), other.as_i16()),
+            4 => Self::add_32(self.as_i32(), other.as_i32()),
+            8 => Self::add_64(self.as_i64(), other.as_i64()),
             _ => panic!("Invalid byte size for integer value"),
+        }
+    }
+    pub fn sub_8(lhs: i8, rhs: i8) -> IntValue {
+        match lhs.checked_sub(rhs) {
+            Some(r) => IntValue::Int8(r),
+            None => { Self::sub_16(lhs as i16, rhs as i16) }
+        }
+    }
+    pub fn sub_16(lhs: i16, rhs: i16) -> IntValue {
+        match lhs.checked_sub(rhs) {
+            Some(r) => IntValue::Int16(r),
+            None => { Self::sub_32(lhs as i32, rhs as i32) }
+        }
+    }
+    pub fn sub_32(lhs: i32, rhs: i32) -> IntValue {
+        match lhs.checked_sub(rhs) {
+            Some(r) => IntValue::Int32(r),
+            None => { Self::sub_64(lhs as i64, rhs as i64) }
+        }
+    }
+    pub fn sub_64(lhs: i64, rhs: i64) -> IntValue {
+        match lhs.checked_sub(rhs) {
+            Some(r) => IntValue::Int64(r),
+            None => { panic!("Integer overflow") }
         }
     }
     pub fn sub(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            1 => IntValue::Int8(self.as_i8() - other.as_i8()),
-            2 => IntValue::Int16(self.as_i16() - other.as_i16()),
-            4 => IntValue::Int32(self.as_i32() - other.as_i32()),
-            8 => IntValue::Int64(self.as_i64() - other.as_i64()),
+            1 => Self::sub_8(self.as_i8(), other.as_i8()),
+            2 => Self::sub_16(self.as_i16(), other.as_i16()),
+            4 => Self::sub_32(self.as_i32(), other.as_i32()),
+            8 => Self::sub_64(self.as_i64(), other.as_i64()),
             _ => panic!("Invalid byte size for integer value"),
+        }
+    }
+    pub fn mul_8(lhs: i8, rhs: i8) -> IntValue {
+        match lhs.checked_mul(rhs) {
+            Some(r) => IntValue::Int8(r),
+            None => { Self::mul_16(lhs as i16, rhs as i16) }
+        }
+    }
+    pub fn mul_16(lhs: i16, rhs: i16) -> IntValue {
+        match lhs.checked_mul(rhs) {
+            Some(r) => IntValue::Int16(r),
+            None => { Self::mul_32(lhs as i32, rhs as i32) }
+        }
+    }
+    pub fn mul_32(lhs: i32, rhs: i32) -> IntValue {
+        match lhs.checked_mul(rhs) {
+            Some(r) => IntValue::Int32(r),
+            None => { Self::mul_64(lhs as i64, rhs as i64) }
+        }
+    }
+    pub fn mul_64(lhs: i64, rhs: i64) -> IntValue {
+        match lhs.checked_mul(rhs) {
+            Some(r) => IntValue::Int64(r),
+            None => { panic!("Integer overflow") }
         }
     }
     pub fn mul(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            1 => IntValue::Int8(self.as_i8() * other.as_i8()),
-            2 => IntValue::Int16(self.as_i16() * other.as_i16()),
-            4 => IntValue::Int32(self.as_i32() * other.as_i32()),
-            8 => IntValue::Int64(self.as_i64() * other.as_i64()),
+            1 => Self::mul_8(self.as_i8(), other.as_i8()),
+            2 => Self::mul_16(self.as_i16(), other.as_i16()),
+            4 => Self::mul_32(self.as_i32(), other.as_i32()),
+            8 => Self::mul_64(self.as_i64(), other.as_i64()),
             _ => panic!("Invalid byte size for integer value"),
+        }
+    }
+    pub fn div_8(lhs: i8, rhs: i8) -> IntValue {
+        match lhs.checked_div(rhs) {
+            Some(r) => IntValue::Int8(r),
+            None => { Self::div_16(lhs as i16, rhs as i16) }
+        }
+    }
+    pub fn div_16(lhs: i16, rhs: i16) -> IntValue {
+        match lhs.checked_div(rhs) {
+            Some(r) => IntValue::Int16(r),
+            None => { Self::div_32(lhs as i32, rhs as i32) }
+        }
+    }
+    pub fn div_32(lhs: i32, rhs: i32) -> IntValue {
+        match lhs.checked_div(rhs) {
+            Some(r) => IntValue::Int32(r),
+            None => { Self::div_64(lhs as i64, rhs as i64) }
+        }
+    }
+    pub fn div_64(lhs: i64, rhs: i64) -> IntValue {
+        match lhs.checked_div(rhs) {
+            Some(r) => IntValue::Int64(r),
+            None => { panic!("Integer overflow") }
         }
     }
     pub fn div(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            1 => IntValue::Int8(self.as_i8() / other.as_i8()),
-            2 => IntValue::Int16(self.as_i16() / other.as_i16()),
-            4 => IntValue::Int32(self.as_i32() / other.as_i32()),
-            8 => IntValue::Int64(self.as_i64() / other.as_i64()),
+            1 => Self::div_8(self.as_i8(), other.as_i8()),
+            2 => Self::div_16(self.as_i16(), other.as_i16()),
+            4 => Self::div_32(self.as_i32(), other.as_i32()),
+            8 => Self::div_64(self.as_i64(), other.as_i64()),
             _ => panic!("Invalid byte size for integer value"),
         }
     }
@@ -153,11 +370,6 @@ impl IntValue {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum FloatValue {
-    Float32(f32),
-    Float64(f64),
-}
 
 impl FloatValue {
     pub fn as_f32(&self) -> f32 {
@@ -185,31 +397,75 @@ impl FloatValue {
             other.get_size()
         }
     }
+    pub fn add_32(lhs: f32, rhs: f32) -> FloatValue {
+        let res = lhs + rhs;
+        if res.is_finite() {
+            FloatValue::Float32(res)
+        } else {
+            Self::add_64(lhs as f64, rhs as f64)
+        }
+    }
+    pub fn add_64(lhs: f64, rhs: f64) -> FloatValue {
+        FloatValue::Float64(lhs + rhs)
+    }
     pub fn add(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            4 => FloatValue::Float32(self.as_f32() + other.as_f32()),
-            8 => FloatValue::Float64(self.as_f64() + other.as_f64()),
+            4 => Self::add_32(self.as_f32(), other.as_f32()),
+            8 => Self::add_64(self.as_f64(), other.as_f64()),
             _ => panic!("Invalid byte size for float value"),
         }
+    }
+    pub fn sub_32(lhs: f32, rhs: f32) -> FloatValue {
+        let res = lhs - rhs;
+        if res.is_finite() {
+            FloatValue::Float32(res)
+        } else {
+            Self::sub_64(lhs as f64, rhs as f64)
+        }
+    }
+    pub fn sub_64(lhs: f64, rhs: f64) -> FloatValue {
+        FloatValue::Float64(lhs - rhs)
     }
     pub fn sub(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            4 => FloatValue::Float32(self.as_f32() - other.as_f32()),
-            8 => FloatValue::Float64(self.as_f64() - other.as_f64()),
+            4 => Self::sub_32(self.as_f32(), other.as_f32()),
+            8 => Self::sub_64(self.as_f64(), other.as_f64()),
             _ => panic!("Invalid byte size for float value"),
         }
+    }
+    pub fn mul_32(lhs: f32, rhs: f32) -> FloatValue {
+        let res = lhs * rhs;
+        if res.is_finite() {
+            FloatValue::Float32(res)
+        } else {
+            Self::mul_64(lhs as f64, rhs as f64)
+        }
+    }
+    pub fn mul_64(lhs: f64, rhs: f64) -> FloatValue {
+        FloatValue::Float64(lhs * rhs)
     }
     pub fn mul(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            4 => FloatValue::Float32(self.as_f32() * other.as_f32()),
-            8 => FloatValue::Float64(self.as_f64() * other.as_f64()),
+            4 => Self::mul_32(self.as_f32(), other.as_f32()),
+            8 => Self::mul_64(self.as_f64(), other.as_f64()),
             _ => panic!("Invalid byte size for float value"),
         }
     }
+    pub fn div_32(lhs: f32, rhs: f32) -> FloatValue {
+        let res = lhs / rhs;
+        if res.is_finite() {
+            FloatValue::Float32(res)
+        } else {
+            Self::div_64(lhs as f64, rhs as f64)
+        }
+    }
+    pub fn div_64(lhs: f64, rhs: f64) -> FloatValue {
+        FloatValue::Float64(lhs / rhs)
+    }
     pub fn div(self, other: Self) -> Self {
         match &self.use_size_of_biggest(&other) {
-            4 => FloatValue::Float32(self.as_f32() / other.as_f32()),
-            8 => FloatValue::Float64(self.as_f64() / other.as_f64()),
+            4 => Self::div_32(self.as_f32(), other.as_f32()),
+            8 => Self::div_64(self.as_f64(), other.as_f64()),
             _ => panic!("Invalid byte size for float value"),
         }
     }
@@ -257,16 +513,6 @@ impl FloatValue {
     }
 }
 
-#[derive(Clone, Debug)]
-enum CharValue {
-    Char(char),
-}
-
-#[derive(Clone, Debug)]
-pub struct  StringValue {
-    value: String
-}
-
 impl StringValue {
     pub fn new(value: String) -> Self {
         Self { value }
@@ -290,27 +536,6 @@ impl StringValue {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct BoolValue {
-    value: bool,
-}
-
-impl BoolValue {
-    pub fn new(value: bool) -> Self {
-        BoolValue { value }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum ValueType {
-    Int(IntValue),
-    Float(FloatValue),
-    Bool(BoolValue),
-    // Char(Char),
-    String(StringValue),
-    // Vector(Vec<Value>),
-}
-
 impl ValueType {
     pub fn as_string(&self) -> String {
         match self {
@@ -329,7 +554,7 @@ impl ValueType {
         }
     }
     pub fn add(self, other: Self) -> Self {
-        match (self, other) {
+        match (self.clone(), other.clone()) {
             (ValueType::Int(lhs_int), ValueType::Int(rhs_int)) => {
                 ValueType::Int(lhs_int.add(rhs_int))
             }
@@ -360,7 +585,7 @@ impl ValueType {
                 ValueType::String(lhs_string.add(rhs_string))
             }
             _ => {
-                panic!("Invalid types for add operation");
+                panic!("Invalid types for add operation: {:?} + {:?}", self, other);
             }
         }
     }
@@ -669,118 +894,96 @@ impl ValueType {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Value {
-    Struct(Struct),
-    Value(ValueType)
-}
-
-impl Value {
-    fn to_val(&self) -> ValueType {
-        match self {
-            Value::Struct(s) => s.get_value().clone(),
-            Value::Value(v) => v.clone()
-        }
-    }
-    pub fn from_int_val(val: IntValue) -> Self {
-        Self::Value(ValueType::Int(val))
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct Struct {
-    name: String,
-    values: HashMap<String, Value>
-}
-
-impl Struct {
-    pub fn new(name: String, val: Value) -> Self {
+impl Object {
+    pub fn new(name: String) -> Self {
         let mut values = HashMap::new();
-        values.insert("__value__".to_string(), val);
         Self { name, values }
     }
-    fn get_value(&self) -> ValueType {
-        self.values.get("__value__").unwrap().clone().to_val()
+    fn get_value(&self) -> Option<ValueType> {
+        match self.values.get("__value__") {
+            None => { None }
+            Some(val) => { Some(val.to_val()) }
+        }
     }
-    fn get_member(&self, name: String) -> ValueType {
-        self.values.get(&name).unwrap().clone().to_val()
-    }
+    // fn get_member(&self, name: String) -> ValueType {
+    //     self.values.get(&name).unwrap().clone().to_val()
+    // }
     fn set_value(&mut self, val: Value) {
         self.values.insert("__value__".to_string(), val);
     }
     fn set_member(&mut self, name: String, val: Value) {
-        self.values.insert(name, val);
+        if name.contains("."){
+            // splits the name into the object name and the member name, then sets the member, member name can have multiple dots
+            let mut split = name.split(".");
+            let obj_name = split.next().unwrap().to_string();
+            let member_name = split.collect::<Vec<&str>>().join(".");
+            match self.values.get_mut(&obj_name).unwrap() {
+                Value::Object(obj) => {
+                    obj.set_member(member_name, val);
+                }
+                _ => {
+                    panic!("Invalid member type");
+                }
+            };
+        } else {
+            self.values.insert(name, val);
+        }
+    }
+    fn get_member(&mut self, name: String) -> ValueType {
+        if name.contains("."){
+            // splits the name into the object name and the member name, then sets the member, member name can have multiple dots
+            let mut split = name.split(".");
+            let obj_name = split.next().unwrap().to_string();
+            let member_name = split.collect::<Vec<&str>>().join(".");
+            match self.values.get_mut(&obj_name).unwrap(){
+                Value::Object(obj) => {
+                    return obj.get_member(member_name);
+                }
+                _ => {
+                    panic!("Invalid member type");
+                }
+            };
+        } else {
+            return match self.values.get(&name){
+                None => {
+                    println!("{:#?}", self.values);
+                    panic!("Invalid member name, '{}'", name);
+                }
+                Some(val) => {
+                    val.to_val()
+                }
+            }
+        }
     }
 }
 
-pub struct  StructCreator {
+#[derive(Debug)]
+pub struct ObjectCreator {
     name: String,
     members: Vec<String>,
 }
 
-impl StructCreator {
+impl ObjectCreator {
     pub fn new(name: String) -> Self {
         Self { name, members: Vec::new() }
     }
     pub fn add_member(&mut self, name: String) {
         self.members.push(name);
     }
-    pub fn create(&self, members: Vec<Value>) -> Struct {
-        if members.len() != self.members.len() + 1 {
-            panic!("Expected {} number of members for {} struct, got {}", self.members.len() + 1, self.name, members.len())
+    pub fn create(&self, members: Vec<Value>) -> Option<Object> {
+        if members.len() != self.members.len() {
+            return None;
         }
-        let mut s = Struct::new(self.name.clone(), members[0].clone());
-        for i in 1..members.len() {
-            s.set_member(self.members[i-1].clone(), members[i].clone());
+        let mut s = Object::new(self.name.clone());
+        for i in 0..members.len() {
+            s.set_member(self.members[i].clone(), members[i].clone());
         }
-        s
+        Some(s)
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Instruction {
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Eq,
-    Neq,
-    Lt,
-    Gt,
-    LtEq,
-    GtEq,
-    Load(String),
-    Store(String),
-    NewVariable(String, Struct),
-    Delete(String),
-    Jump(usize),
-    JumpIfFalse(usize),
-    JumpIfTrue(usize),
-    Call(String),
-    Push(ValueType),
-    Pop,
-    Nop,
-    Return,
-    Clone,
-    Swap,
-    Rotate,
-    MoveBack(usize)
-}
-
-
-#[derive(Debug)]
-pub struct VirtualMachine {
-    stack: Vec<ValueType>,
-    rom: Vec<Instruction>,
-    pc: usize,
-    heap: HashMap<String, Struct>,
-    functions: HashMap<String, usize>,
-    call_stack: Vec<usize>,
-}
-
 impl VirtualMachine {
-    pub fn new(mut new_rom: Vec<Instruction>) -> Self {
+    pub fn new(mut new_rom: Vec<Instruction>, functions: HashMap<String, usize>, class_definitions: HashMap<String, ObjectCreator>) -> Self {
         let mut rom = vec![Instruction::Nop];
         rom.append(&mut new_rom);
         Self {
@@ -788,12 +991,13 @@ impl VirtualMachine {
             rom,
             pc: 0,
             heap: HashMap::new(),
-            functions: Default::default(),
-            call_stack: vec![]
+            functions,
+            call_stack: vec![],
+            class_definitions
         }
     }
-    pub fn emulate(instructions: Vec<Instruction>){
-        Self::new(instructions).run();
+    pub fn emulate(instructions: Vec<Instruction>, functions: HashMap<String, usize>, classes: HashMap<String, ObjectCreator>) {
+        Self::new(instructions, functions, classes).run();
     }
     fn current_instruction(&self) -> Instruction {
         self.rom[self.pc].clone()
@@ -812,10 +1016,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.add(rhs)
+                    Value::Value(lhs.add(rhs))
                 )
             }
             Instruction::Sub => {
@@ -823,10 +1027,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.sub(rhs)
+                    Value::Value(lhs.sub(rhs))
                 )
             }
             Instruction::Mul => {
@@ -834,10 +1038,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.mul(rhs)
+                    Value::Value(lhs.mul(rhs))
                 )
             }
             Instruction::Div => {
@@ -845,10 +1049,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.div(rhs)
+                    Value::Value(lhs.div(rhs))
                 )
             }
             Instruction::Eq => {
@@ -856,10 +1060,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.eq(rhs)
+                    Value::Value(lhs.eq(rhs))
                 )
             }
             Instruction::Neq => {
@@ -867,10 +1071,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.ne(rhs)
+                    Value::Value(lhs.ne(rhs))
                 )
             }
             Instruction::Lt => {
@@ -878,10 +1082,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.lt(rhs)
+                    Value::Value(lhs.lt(rhs))
                 )
             }
             Instruction::Gt => {
@@ -889,10 +1093,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.gt(rhs)
+                    Value::Value(lhs.gt(rhs))
                 )
             }
             Instruction::LtEq => {
@@ -900,10 +1104,10 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.le(rhs)
+                    Value::Value(lhs.le(rhs))
                 )
             }
             Instruction::GtEq => {
@@ -911,17 +1115,30 @@ impl VirtualMachine {
                     panic!("Stack underflow");
                 }
 
-                let rhs = self.stack.pop().unwrap();
-                let lhs = self.stack.pop().unwrap();
+                let rhs = self.stack.pop().unwrap().to_val();
+                let lhs = self.stack.pop().unwrap().to_val();
                 self.stack.push(
-                    lhs.ge(rhs)
+                    Value::Value(lhs.ge(rhs))
                 )
             }
             Instruction::Load(name) => {
-                if let Some(val) = self.heap.get(&name) {
-                    self.stack.push(val.get_value());
+                let mut path: VecDeque<&str> = name.split(".").into_iter().collect::<VecDeque<&str>>();
+                let var = path.pop_front().unwrap();
+                if let Some(val) = self.heap.get_mut(&var.to_string()) {
+                    let name = path.into_iter().collect::<Vec<&str>>().join(".");
+                    if name.is_empty(){
+                        match val.get_value() {
+                            None => {
+                                let val = self.heap.get(&var.to_string()).unwrap().clone();
+                                self.stack.push(Value::Object(val));
+                            }
+                            Some(value) => {self.stack.push(Value::Value(value))}
+                        }
+                    } else {
+                        self.stack.push(Value::Value(val.get_member(name)));
+                    }
                 } else {
-                    panic!("Struct not found");
+                    panic!("Struct {:?} not found", name);
                 }
             }
             Instruction::Store(name) => {
@@ -929,12 +1146,40 @@ impl VirtualMachine {
                 // todo: struct member store
                 let var = path.pop_front().unwrap();
                 if let Some(val) = self.heap.get_mut(&var.to_string()) {
-                    val.set_value(Value::Value(self.stack.pop().unwrap()));
+                    let name = path.into_iter().collect::<Vec<&str>>().join(".");
+                    match self.stack.pop().unwrap(){
+                        Value::Value(v) => {
+                            if name.is_empty() {
+                                val.set_value(Value::Value(v));
+                            } else {
+                                val.set_member(name, Value::Value(v));
+                            }
+                        },
+                        Value::Object(obj) => {
+                            if name.is_empty() {
+                                self.heap.insert(var.to_string(), obj);
+                            } else {
+                                val.set_member(name, Value::Object(obj));
+                            }
+                        }
+                    };
                 } else {
                     panic!("Struct not found");
                 }
             }
-            Instruction::NewVariable(name, value) => {
+            Instruction::NewVariable(name) => {
+                if self.stack.is_empty() {
+                    panic!("Stack underflow");
+                }
+
+                let value = match self.stack.pop().unwrap(){
+                    Value::Value(v) => {
+                        let mut sd = Object::new("".to_string());
+                        sd.set_value(Value::Value(v));
+                        sd
+                    },
+                    Value::Object(obj) => obj
+                };
                 match self.heap.insert(name.clone(), value) {
                     None => {}
                     Some(_) => { panic!("{} already exists", name) }
@@ -951,21 +1196,20 @@ impl VirtualMachine {
             }
             Instruction::JumpIfFalse(line) => {
                 if let Some(val) = self.stack.pop() {
-                    let res = match val {
+                    let res = match val.to_val() {
                         ValueType::Bool(b) => b.value,
                         _ => panic!("Invalid type")
                     };
                     if !res {
                         self.pc = line - 1;
                     }
-
                 } else {
                     panic!("Stack underflow");
                 }
             }
             Instruction::JumpIfTrue(line) => {
                 if let Some(val) = self.stack.pop() {
-                    let res = match val {
+                    let res = match val.to_val() {
                         ValueType::Bool(b) => b.value,
                         _ => panic!("Invalid type")
                     };
@@ -979,6 +1223,8 @@ impl VirtualMachine {
             Instruction::Call(function_name) => {
                 if BUILTIN_FUNCTIONS.contains(&&*function_name){
                     self.call_builtin(&*function_name);
+                } else if self.class_definitions.contains_key(&*function_name) {
+                    self.class_call(&*function_name)
                 }
                 else if let Some(line) = self.functions.get(&function_name) {
                     self.call_stack.push(self.pc);
@@ -988,13 +1234,13 @@ impl VirtualMachine {
                 }
             }
             Instruction::Push(value) => {
-                self.stack.push(value);
+                self.stack.push(Value::Value(value));
             }
             Instruction::Pop => { unimplemented!("Pop"); }
             Instruction::Nop => {}
             Instruction::Return => {
                 if let Some(line) = self.call_stack.pop() {
-                    self.pc = line - 1;
+                    self.pc = line;
                 } else {
                     panic!("Call stack underflow");
                 }
@@ -1037,12 +1283,27 @@ impl VirtualMachine {
             }
         }
     }
-    fn call_builtin(&mut self, name: &str){
-        let len = match self.stack.pop().unwrap_or_else(|| panic!("{} Call, Stack underflow", name)) {
+    fn top_as_len(&mut self, name: &str) -> i64 {
+        match self.stack.pop().unwrap_or_else(|| panic!("{} Call, Stack underflow", name)).to_val() {
             ValueType::Int(int) => int.as_i64(),
             _ => panic!("{} Call, Invalid type", name)
-        };
-        let args = VecDeque::from_iter(self.stack.drain(self.stack.len() - len as usize..));
+        }
+    }
+    fn class_call(&mut self, name: &str){
+        let len = self.top_as_len(&*format!("Struct Constructor {}", name));
+        let mut args = Vec::from_iter(self.stack.drain(self.stack.len() - len as usize..).into_iter());
+        let creator = self.class_definitions.get(&*name).unwrap();
+        // println!("{:?}", self.class_definitions);
+        match creator.create(args) {
+            Some(obj) => {
+                self.stack.push(Value::Object(obj));
+            }
+            None => { panic!("Struct {} not found", name) }
+        }
+    }
+    fn call_builtin(&mut self, name: &str){
+        let len = self.top_as_len(&*format!("Function {}", name));
+        let mut args = VecDeque::from_iter(self.stack.drain(self.stack.len() - len as usize..).into_iter());
         match name {
             "print" => {
                 let mut output = String::new();
@@ -1067,7 +1328,39 @@ impl VirtualMachine {
                     panic!("format function takes 1 or more arguments, {} given", args.len())
                 }
 
-                unimplemented!();
+                let mut string = match args.pop_front() {
+                    Some(Value::Value(ValueType::String(string))) => string.value,
+                    _ => panic!("format function takes string as first argument")
+                };
+
+                for arg in args {
+                    string = string.replacen("{}", &*arg.as_string(), 1)
+                }
+                self.stack.push(
+                    Value::Value(ValueType::String(StringValue {
+                        value: string
+                    }))
+                )
+            }
+            "assert" => {
+                if args.len() < 2 {
+                    panic!("assert function takes 2 arguments, {} given", args.len())
+                }
+
+                let mut res = match args.pop_front() {
+                    Some(Value::Value(ValueType::Bool(bool))) => bool.value,
+                    res => panic!("assert function takes bool as first argument, got: {:?}", res)
+                };
+
+                if !res {
+                    let mut output = String::new();
+                    for arg in args {
+                        output.push_str(&*arg.as_string());
+                        output.push(' ')
+                    }
+                    output.pop();
+                    panic!("Assertion failed: {}", output)
+                }
             }
             _ => unimplemented!("builtin function {} is not implemented", name)
         }
@@ -1082,7 +1375,7 @@ impl VirtualMachine {
         }
     }
 
-    pub fn get_heap(&self) -> &HashMap<String, Struct> {
+    pub fn get_heap(&self) -> &HashMap<String, Object> {
         &self.heap
     }
 }

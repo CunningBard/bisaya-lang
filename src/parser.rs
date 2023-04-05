@@ -45,7 +45,12 @@ pub enum Statement {
         body: Block
     },
     Break,
-    Continue
+    Continue,
+    Return { returns: Vec<ExprAst>},
+    ClassDeclaration {
+        class_name: String,
+        members: Vec<String>
+    }
 }
 
 fn parse_body(pairs: Pairs<Rule>) -> Block {
@@ -63,6 +68,9 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
         Rule::variable_assignment => {
             let mut inner = pair.into_inner();
             let name = inner.next().unwrap().as_str().to_string();
+            if name.contains("."){
+               panic!("Variable name cannot contain a period .");
+            }
             let value = parse_expression(inner.next().unwrap());
 
             Statement::VariableAssignment { name, value }
@@ -126,6 +134,48 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
         }
         Rule::break_kw => Statement::Break,
         Rule::continue_kw => Statement::Continue,
+        Rule::return_kw => {
+            let mut inner = pair.into_inner();
+            let mut returns = Vec::new();
+
+            for expr in inner {
+                returns.push(parse_expression(expr));
+            }
+
+            Statement::Return { returns }
+        },
+        Rule::function_declaration => {
+            // pest grammar: function_declaration = {"proseso" ~ identifier ~ "(" ~ identifier? ~ ("," ~ identifier)* ~ ","* ~ ")" ~ block}
+            let mut inner = pair.into_inner().collect::<VecDeque<Pair<Rule>>>();
+            let name = inner.pop_front().unwrap().as_str().to_string();
+            let mut args = Vec::new();
+            loop {
+                match inner.pop_front() {
+                    Some(arg) => {
+                        match arg.as_rule() {
+                            Rule::identifier => {
+                                args.push(arg.as_str().to_string());
+                            },
+                            Rule::block => {
+                                let body = parse_body(arg.into_inner());
+                                return Statement::FunctionDefinition { name, args, body }
+                            },
+                            _ => { unreachable!("not an identifier or block") }
+                        }
+                    },
+                    None => { unreachable!("no block found") }
+                }
+            }
+        },
+        Rule::class_declaration =>  {
+            let mut inner = pair.into_inner().collect::<VecDeque<Pair<Rule>>>();
+            let class_name = inner.pop_front().unwrap().as_str().to_string();
+            let mut members = vec![];
+            for pair in inner {
+                members.push(pair.as_str().to_string())
+            }
+            Statement::ClassDeclaration { class_name, members }
+        }
         _ => unreachable!("not a statement: {:?}", pair)
     }
 
@@ -137,6 +187,7 @@ pub fn parse_file_data(file_data: &str) -> Vec<Statement> {
         Ok(res) => res,
         Err(e) => panic!("Error: {}", e)
     };
+    // println!("{:#?}", res);
 
     let mut statements = Vec::new();
 
@@ -144,10 +195,8 @@ pub fn parse_file_data(file_data: &str) -> Vec<Statement> {
     for pair in res {
         match pair.as_rule() {
             Rule::EOI => { break }
-            _ => {}
+            _ => { statements.push(parse_statement(pair)) }
         }
-
-        statements.push(parse_statement(pair));
     }
     statements
 }

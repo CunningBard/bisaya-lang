@@ -5,11 +5,13 @@ new_line = _{natural_newline | explicit_newline}
 line_terminator = _{new_line | EOI}
 
 
-identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+identifier = @{ "_"* ~ ASCII_ALPHANUMERIC ~ (ASCII_ALPHANUMERIC | "_" | ".")* }
 string = @{ "\"" ~ (("\\\"" | !"\"")  ~ ANY)* ~ "\"" }
-float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+float = @{ ("-")? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 integer = @{ ("-")? ~ ASCII_DIGIT+ }
 boolean = @{ "true" | "false" }
+member_access = { "." ~ identifier }
+member_call = { "." ~ function_call }
 
 EQ_OPS = { "==" | "!="  | ">=" | "<=" | ">" | "<"}
 SUM_OPS = { "+" | "-" }
@@ -24,18 +26,21 @@ bare_expr = { sum ~ ((EQ_OPS) ~ sum)* }
 sum = { product ~ ((SUM_OPS) ~ product)* }
 product = { term ~ ((PROD_OPS) ~ term)* }
 term = {
-    string |
+    (string |
     float |
     integer |
     boolean |
     function_call |
     identifier |
-    "(" ~ expr ~ ")"
+    "(" ~ expr ~ ")" ) ~ (member_access | member_call)*
 }
+
+class_declaration = {"klase" ~ identifier ~ "{" ~ natural_newline* ~ identifier? ~ ("," ~ natural_newline* ~ identifier ~ natural_newline*)* ~ ","? ~ natural_newline* ~ "}"}
 
 variable_assignment = {"deklara" ~ identifier ~ "=" ~ expr}
 variable_reassignment = { identifier ~ "=" ~ expr}
 function_call_statement = { function_call }
+function_declaration = {"proseso" ~ identifier ~ "(" ~ identifier? ~ ("," ~ identifier)* ~ ","? ~ ")" ~ block}
 conditional_if = {"kon" ~ expr ~ block }
 conditional_else_if = {"kon" ~ "lain" ~ expr ~ block }
 conditional_else = {"lain" ~ block }
@@ -43,12 +48,12 @@ conditional = { conditional_if ~ (conditional_else_if)* ~ (conditional_else)? }
 while_loop = {"samtang" ~ expr ~ block }
 break_kw = {"buwag"}
 continue_kw = {"tiwas"}
+return_kw = {"balik" ~ expr* ~ ("," ~ expr*)* ~ ","*}
 
 
-block = { "{" ~ statements ~ "}"}
+block = { "{" ~ inner_statements ~ "}"}
 
-statements = _{
-    new_line* ~(
+inner_statement = _{
     (
         variable_assignment
         | function_call_statement
@@ -57,11 +62,22 @@ statements = _{
         | while_loop
         | break_kw
         | continue_kw
+        | return_kw
     )
-    ~ new_line ~ new_line*)*
+    ~ new_line
+}
+
+inner_statements = _{ new_line* ~ inner_statement* ~ new_line*}
+
+outer_statement = _{
+    (new_line* ~ (
+        inner_statement
+        | function_declaration
+        | class_declaration
+    ) ~ new_line*)
 }
 
 
-program = _{ SOI ~ statements ~ EOI }
+program = _{ SOI ~ outer_statement* }
 
 WHITESPACE = _{ " " | "\t" }
