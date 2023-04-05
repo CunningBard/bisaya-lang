@@ -1,13 +1,16 @@
 # GOAL!
-### TODO: while loop
+### TODO: list
 - [ ] 0.1.0
   - [x] basic data types(int, str, float, bool)
   - [ ] lists
   - [x] variable assignment
   - [x] variable reassignment
-  - [ ] function declaration
+  - [x] function declaration
   - [x] built-in function, call 
-  - [ ] function call 
+  - [x] function call 
   - [ ] for loop 
-  - [ ] while loop
-  - [x] conditional statement 
+  - [x] while loop
+  - [x] conditional statement
+  - [x] classes
+  - [x] direct member selection reference
+  - [ ] class method call
