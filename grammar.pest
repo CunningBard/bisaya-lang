@@ -49,6 +49,8 @@ while_loop = {"samtang" ~ expr ~ block }
 break_kw = {"buwag"}
 continue_kw = {"tiwas"}
 return_kw = {"balik" ~ expr* ~ ("," ~ expr*)* ~ ","*}
+COMMENT = { "//" ~ (!new_line ~ ANY)* }
+MULTILINE_COMMENT = { "/*" ~ (!"/*" ~ ANY)* ~ "*/" }
 
 
 block = { "{" ~ inner_statements ~ "}"}
@@ -63,6 +65,8 @@ inner_statement = _{
         | break_kw
         | continue_kw
         | return_kw
+        | COMMENT
+        | MULTILINE_COMMENT
     )
     ~ new_line
 }
@@ -74,6 +78,8 @@ outer_statement = _{
         inner_statement
         | function_declaration
         | class_declaration
+        | COMMENT
+        | MULTILINE_COMMENT
     ) ~ new_line*)
 }
 

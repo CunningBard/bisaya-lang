@@ -57,13 +57,16 @@ fn parse_body(pairs: Pairs<Rule>) -> Block {
     let mut statements = Vec::new();
 
     for pair in pairs {
-        statements.push(parse_statement(pair));
+        match parse_statement(pair) {
+            Some(statement) => statements.push(statement),
+            None => {}
+        }
     }
 
     statements
 }
 
-fn parse_statement(pair: Pair<Rule>) -> Statement {
+fn parse_statement(pair: Pair<Rule>) -> Option<Statement> {
     return match pair.as_rule() {
         Rule::variable_assignment => {
             let mut inner = pair.into_inner();
@@ -73,14 +76,14 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
             }
             let value = parse_expression(inner.next().unwrap());
 
-            Statement::VariableAssignment { name, value }
+            Some(Statement::VariableAssignment { name, value })
         },
         Rule::variable_reassignment => {
             let mut inner = pair.into_inner();
             let name = inner.next().unwrap().as_str().to_string();
             let value = parse_expression(inner.next().unwrap());
 
-            Statement::VariableReassignment { name, value }
+            Some(Statement::VariableReassignment { name, value })
         },
         Rule::function_call_statement => {
             let mut inner = pair.into_inner().next().unwrap().into_inner();
@@ -91,7 +94,7 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
                 args.push(parse_expression(arg));
             }
 
-            Statement::FunctionCall { name, args }
+            Some(Statement::FunctionCall { name, args })
         },
         Rule::conditional => {
             let mut inner = pair.into_inner().collect::<VecDeque<Pair<Rule>>>();
@@ -123,17 +126,17 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
                 }
             }
 
-            Statement::Conditional { condition, body, else_if_conditions, else_body }
+            Some(Statement::Conditional { condition, body, else_if_conditions, else_body })
         },
         Rule::while_loop => {
             let mut inner = pair.into_inner().collect::<VecDeque<Pair<Rule>>>();
             let condition = parse_expression(inner.pop_front().expect("Grammar error: no condition"));
             let body = parse_body(inner.pop_front().unwrap().into_inner());
 
-            Statement::WhileLoop { condition, body }
+            Some(Statement::WhileLoop { condition, body })
         }
-        Rule::break_kw => Statement::Break,
-        Rule::continue_kw => Statement::Continue,
+        Rule::break_kw => Some(Statement::Break),
+        Rule::continue_kw => Some(Statement::Continue),
         Rule::return_kw => {
             let mut inner = pair.into_inner();
             let mut returns = Vec::new();
@@ -142,7 +145,7 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
                 returns.push(parse_expression(expr));
             }
 
-            Statement::Return { returns }
+            Some(Statement::Return { returns })
         },
         Rule::function_declaration => {
             // pest grammar: function_declaration = {"proseso" ~ identifier ~ "(" ~ identifier? ~ ("," ~ identifier)* ~ ","* ~ ")" ~ block}
@@ -158,7 +161,7 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
                             },
                             Rule::block => {
                                 let body = parse_body(arg.into_inner());
-                                return Statement::FunctionDefinition { name, args, body }
+                                return Some(Statement::FunctionDefinition { name, args, body })
                             },
                             _ => { unreachable!("not an identifier or block") }
                         }
@@ -174,8 +177,9 @@ fn parse_statement(pair: Pair<Rule>) -> Statement {
             for pair in inner {
                 members.push(pair.as_str().to_string())
             }
-            Statement::ClassDeclaration { class_name, members }
+            Some(Statement::ClassDeclaration { class_name, members })
         }
+        Rule::COMMENT | Rule::MULTILINE_COMMENT => {None}
         _ => unreachable!("not a statement: {:?}", pair)
     }
 
@@ -195,7 +199,12 @@ pub fn parse_file_data(file_data: &str) -> Vec<Statement> {
     for pair in res {
         match pair.as_rule() {
             Rule::EOI => { break }
-            _ => { statements.push(parse_statement(pair)) }
+            _ => {
+                match parse_statement(pair) {
+                    Some(statement) => statements.push(statement),
+                    None => {}
+                }
+            }
         }
     }
     statements
