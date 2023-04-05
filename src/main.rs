@@ -16,17 +16,27 @@ use crate::node_runner::NodeRunner;
 use crate::virtual_machine::{Instruction, IntValue, ObjectCreator, Value, ValueType, VirtualMachine};
 
 fn main() {
-    let file_contents = fs::read_to_string("test.txt").expect("couldnt read file");
-    println!("{:?}", file_contents);
-    let statements = parse_file_data(&file_contents);
-    println!("------ Parsed Statements ----------");
-    println!("{:#?}", statements);
-    println!("------ Compiled Instruction ----------");
-    let (instructions, function_locations, class_creators) =  instruction_compiler::compile(statements);
-    for instruction in &instructions {
-        println!("{:?}", instruction)
+    let mut debug_mode = false;
+    for arg in std::env::args() {
+        if arg == "--debug" {
+            debug_mode = true;
+        }
     }
-    println!("------ Virtual Machine Output ----------");
+    let file_contents = fs::read_to_string("test.txt").expect("couldnt read file");
+    let statements = parse_file_data(&file_contents);
+    let (instructions, function_locations, class_creators) =  instruction_compiler::compile(statements.clone());
+
+    if debug_mode {
+        println!("{:?}", file_contents);
+        println!("------ Parsed Statements ----------");
+        println!("{:#?}", statements);
+        println!("------ Compiled Instruction ----------");
+        for instruction in &instructions {
+            println!("{:?}", instruction)
+        }
+        println!("------ Virtual Machine Output ----------");
+    }
+
     let mut vm = VirtualMachine::new(instructions, function_locations, class_creators);
     vm.run();
 }

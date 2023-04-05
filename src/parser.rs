@@ -15,6 +15,9 @@ pub enum Statement {
         name: String,
         value: ExprAst
     },
+    VariableMultiAssignment {
+        variables: Vec<String>,
+        value: ExprAst },
     VariableReassignment {
         name: String,
         value: ExprAst
@@ -78,6 +81,24 @@ fn parse_statement(pair: Pair<Rule>) -> Option<Statement> {
 
             Some(Statement::VariableAssignment { name, value })
         },
+        Rule::variable_multi_assignment => {
+            let mut inner = pair.into_inner();
+            let mut variables = vec![];
+            for part in inner {
+                if part.as_rule() != Rule::identifier {
+                    let value = parse_expression(part);
+                    return Some(Statement::VariableMultiAssignment { variables, value })
+                }
+
+                let name = part.as_str().to_string();
+                if name.contains("."){
+                    panic!("Variable name cannot contain a period .");
+                }
+                variables.push(name);
+            }
+
+            unreachable!("Grammar error: no value for multi assignment")
+        }
         Rule::variable_reassignment => {
             let mut inner = pair.into_inner();
             let name = inner.next().unwrap().as_str().to_string();
@@ -206,10 +227,10 @@ pub fn parse_file_data(file_data: &str) -> Vec<Statement> {
             _ => {
                 match parse_statement(pair) {
                     Some(statement) => {
-                        println!("{:#?}", statement);
+                        // println!("{:#?}", statement);
                         statements.push(statement)
                     },
-                    None => { println!("No") }
+                    None => {  }
                 }
             }
         }

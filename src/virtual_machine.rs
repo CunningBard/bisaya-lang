@@ -2,7 +2,16 @@ use std::collections::HashMap;
 use std::collections::vec_deque::VecDeque;
 
 
-const BUILTIN_FUNCTIONS: [&str; 4] = ["print", "println", "format", "assert"];
+const BUILTIN_FUNCTIONS: [&str; 8] = [
+    "print",
+    "println",
+    "format",
+    "assert",
+    "push",
+    "pop",
+    "read_element",
+    "write_element"
+];
 
 
 #[derive(Clone, Debug)]
@@ -41,7 +50,7 @@ pub enum ValueType {
     Bool(BoolValue),
     // Char(Char),
     String(StringValue),
-    // Vector(Vec<Value>),
+    Vector(Vec<Value>),
 }
 
 #[derive(Clone, Debug)]
@@ -551,6 +560,17 @@ impl ValueType {
             ValueType::String(string) => {
                 string.value.clone()
             }
+            ValueType::Vector(vec) => {
+                let mut str = "[".to_string();
+                for value in vec {
+                    str += &*value.as_string();
+                    str += ", "
+                }
+                str.pop();
+                str.pop();
+                str += "]";
+                str
+            }
         }
     }
     pub fn add(self, other: Self) -> Self {
@@ -583,6 +603,11 @@ impl ValueType {
             }
             (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
                 ValueType::String(lhs_string.add(rhs_string))
+            }
+            (ValueType::Vector(vec), ValueType::Vector(mut other_vec)) => {
+                let mut new_vec = vec.clone();
+                new_vec.append(&mut other_vec);
+                ValueType::Vector(new_vec)
             }
             _ => {
                 panic!("Invalid types for add operation: {:?} + {:?}", self, other);
@@ -1361,6 +1386,72 @@ impl VirtualMachine {
                     output.pop();
                     panic!("Assertion failed: {}", output)
                 }
+            }
+            "push" => {
+                if args.len() != 2 {
+                    panic!("push function takes 2 arguments, {} given", args.len())
+                }
+
+                let mut list = match args.pop_front() {
+                    Some(Value::Value(ValueType::Vector(list))) => list,
+                    val => panic!("push function takes list as first argument: {:?}", val)
+                };
+                let value = args.pop_front().unwrap_or_else(|| panic!("push function takes value as second argument"));
+                list.push(value);
+                self.stack.push(Value::Value(ValueType::Vector(list)))
+            }
+            "pop" => {
+                if args.len() != 1 {
+                    panic!("pop function takes 1 argument, {} given", args.len())
+                }
+
+                let mut list = match args.pop_front() {
+                    Some(Value::Value(ValueType::Vector(list))) => list,
+                    val => panic!("pop function takes list as first argument: {:?}", val)
+                };
+                let value = list.pop().unwrap_or_else(|| panic!("pop function takes list as first argument"));
+                self.stack.push(Value::Value(ValueType::Vector(list)));
+                self.stack.push(value)
+            }
+            "read_element" => {
+                if args.len() != 2 {
+                    panic!("read_element function takes 2 arguments, {} given", args.len())
+                }
+
+                let list = match args.pop_front() {
+                    Some(Value::Value(ValueType::Vector(list))) => list,
+                    val => panic!("read_element function takes list as first argument: {:?}", val)
+                };
+                let index = match args.pop_front() {
+                    Some(Value::Value(ValueType::Int(int))) => int.as_i64(),
+                    val => panic!("read_element function takes int as second argument: {:?}", val)
+                };
+                let item = match list.get(index as usize) {
+                    Some(item) => item.clone(),
+                    None => panic!("read_element function takes index in range of list")
+                };
+                self.stack.push(Value::Value(ValueType::Vector(list)));
+                self.stack.push(item)
+            }
+            "write_element" => {
+                if args.len() != 3 {
+                    panic!("write_element function takes 3 arguments, {} given", args.len())
+                }
+
+                let mut list = match args.pop_front() {
+                    Some(Value::Value(ValueType::Vector(list))) => list,
+                    val => panic!("write_element function takes list as first argument: {:?}", val)
+                };
+                let index = match args.pop_front() {
+                    Some(Value::Value(ValueType::Int(int))) => int.as_i64(),
+                    val => panic!("write_element function takes int as second argument: {:?}", val)
+                };
+                let val = args.pop_front().unwrap_or_else(|| panic!("write_element function takes value as third argument"));
+                match list.get_mut(index as usize) {
+                    Some(item) => *item = val,
+                    None => panic!("write_element function takes index in range of list")
+                };
+                self.stack.push(Value::Value(ValueType::Vector(list)))
             }
             _ => unimplemented!("builtin function {} is not implemented", name)
         }

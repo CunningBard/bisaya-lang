@@ -71,6 +71,14 @@ impl InstructionCompiler {
                     EvalValue::Reference { val } => {
                         inst.push(Instruction::Load(val.clone()))
                     }
+                    EvalValue::List { val } => {
+                        inst.push(Instruction::Push(ValueType::Vector(vec![])));
+                        for value in val {
+                            inst.append(&mut self.compile_expr_ast(value));
+                            inst.push(Instruction::Push(ValueType::Int(IntValue::Int32(2))));
+                            inst.push(Instruction::Call("push".to_string()));
+                        }
+                    }
                     _ => { unreachable!() }
                 }
             }
@@ -290,6 +298,13 @@ impl InstructionCompiler {
 
                     self.class_details.insert(class_name.clone(), (members.len(), members));
                     self.class_creators.insert(class_name.clone(), creator);
+                }
+                Statement::VariableMultiAssignment { variables, value } => {
+                    translations.append(&mut self.compile_expr_ast(value).iter().map(|x| Translation::Instruction(x.clone())).collect());
+                    for variable in variables {
+                        translations.push(Translation::Instruction(Instruction::NewVariable(variable.clone())));
+                        assignments.push(variable.clone());
+                    }
                 }
                 _ => { unimplemented!("statement {:?}: not implemented", statement) }
             }

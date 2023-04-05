@@ -10,17 +10,19 @@ string = @{ "\"" ~ (("\\\"" | !"\"")  ~ ANY)* ~ "\"" }
 float = @{ ("-")? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 integer = @{ ("-")? ~ ASCII_DIGIT+ }
 boolean = @{ "true" | "false" }
+
 member_access = { "." ~ identifier }
 member_call = { "." ~ function_call }
+
+
+
 
 eq_ops = { "==" | "!="  | ">=" | "<=" | ">" | "<"}
 sum_ops = { "+" | "-" }
 prod_ops = { "*" | "/" }
 
-expr = {
-    bare_expr |
-    function_call
-}
+list = { "[" ~ expr* ~ ("," ~ expr)* ~ ","? ~ "]" }
+expr = { bare_expr }
 function_call = { identifier ~ "(" ~ expr* ~ ("," ~ expr)* ~ ")" }
 bare_expr = { sum ~ ((eq_ops) ~ sum)* }
 sum = { product ~ ((sum_ops) ~ product)* }
@@ -30,6 +32,7 @@ term = {
     float |
     integer |
     boolean |
+    list |
     function_call |
     identifier |
     "(" ~ expr ~ ")" ) ~ (member_access | member_call)*
@@ -38,6 +41,7 @@ term = {
 class_declaration = {"klase" ~ identifier ~ "{" ~ natural_newline* ~ identifier? ~ ("," ~ natural_newline* ~ identifier ~ natural_newline*)* ~ ","? ~ natural_newline* ~ "}"}
 
 variable_assignment = {"deklara" ~ identifier ~ "=" ~ expr}
+variable_multi_assignment = {"deklara" ~ identifier ~ ("," ~ identifier)* ~ ","? ~ "=" ~ expr}
 variable_reassignment = { identifier ~ "=" ~ expr}
 function_call_statement = { function_call }
 function_declaration = {"proseso" ~ identifier ~ "(" ~ identifier? ~ ("," ~ identifier)* ~ ","? ~ ")" ~ block}
@@ -57,6 +61,7 @@ block = { "{" ~ inner_statements ~ "}"}
 inner_statement = _{
     (
         variable_assignment
+        | variable_multi_assignment
         | function_call_statement
         | conditional
         | variable_reassignment

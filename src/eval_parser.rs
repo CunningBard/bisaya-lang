@@ -13,6 +13,7 @@ pub enum EvalValue {
     Stringliteral { val: String },
     FloatLiteral { val: String },
     BooleanLiteral { val: bool },
+    List { val: Vec<ExprAst> },
 }
 
 #[derive(Debug, Clone)]
@@ -78,6 +79,16 @@ impl ToString for EvalValue {
             Self::Stringliteral { val } => { val.clone() }
             Self::FloatLiteral { val } => { val.clone() }
             Self::BooleanLiteral { val } => { val.to_string() }
+            EvalValue::List { val } => {
+                let mut s = "[".to_string();
+                for x in val {
+                    s += &*x.to_string();
+                    s += ", ";
+                }
+                s.pop();
+                s.pop();
+                s
+            }
         }
     }
 }
@@ -121,6 +132,83 @@ impl ExprAst {
                 )
             }
             _ => unreachable!()
+        }
+    }
+    fn to_string(&self) -> String {
+        match self {
+            Self::Value { val } => { val.to_string() }
+            Self::FunctionCall { name, args } => {
+                let mut s = name.clone();
+                s += "(";
+                for x in args {
+                    s += &*x.to_string();
+                    s += ", ";
+                }
+                s.pop();
+                s.pop();
+                s += ")";
+                s
+            }
+            Self::Addition { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " + ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Subtraction { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " - ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Division { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " / ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Multiplication { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " * ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Eq { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " == ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Neq { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " != ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::GtEq { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " >= ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::LtEq { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " <= ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Gt { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " > ";
+                s += &*rhs.to_string();
+                s
+            }
+            Self::Lt { lhs, rhs } => {
+                let mut s = lhs.to_string();
+                s += " < ";
+                s += &*rhs.to_string();
+                s
+            }
         }
     }
 }
@@ -358,7 +446,22 @@ fn rule_expr_to_eval_expr(rule: Pair<Rule>) -> ExprAst
                 args: pairs.iter().map(|pair| rule_expr_to_eval_expr(pair.clone())).collect()
             }
         }
-
+        Rule::list => {
+            let mut pairs = rule.into_inner().collect::<VecDeque<Pair<Rule>>>();
+            let mut items = vec![];
+            for pair in pairs {
+                match pair.as_rule() {
+                    _ => {
+                        items.push(rule_expr_to_eval_expr(pair))
+                    }
+                }
+            }
+            ExprAst::Value {
+                val: EvalValue::List {
+                    val: items
+                }
+            }
+        }
         _ => unreachable!("{:?}", rule)
     }
 }

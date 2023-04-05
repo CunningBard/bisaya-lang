@@ -33,6 +33,7 @@ impl NodeRunner {
             EvalValue::Stringliteral { .. } => { 2 }
             EvalValue::FloatLiteral { .. } => { 3 }
             EvalValue::BooleanLiteral { .. } => { 4 }
+            EvalValue::List { .. } => { 5 }
         }
     }
 
